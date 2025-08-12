@@ -12,12 +12,14 @@
 
 ## Технологии
 
-- Vue 3 (Composition API)
-- TypeScript
-- Vite
-- CSS3 (Grid Layout, Flexbox)
+- **Frontend**: Vue 3 (Composition API), TypeScript, Vite
+- **Backend**: Express.js, Node.js
+- **Стили**: CSS3 (Grid Layout, Flexbox)
+- **API**: RESTful API с Express, Fetch API для клиента
 
 ## Установка и запуск
+
+### Frontend (Vue приложение)
 
 1. Установите зависимости:
 ```bash
@@ -31,23 +33,61 @@ npm run dev
 
 3. Откройте браузер и перейдите по адресу `http://localhost:5173`
 
+### Backend (Express сервер)
+
+1. Перейдите в папку сервера:
+```bash
+cd server
+```
+
+2. Установите зависимости:
+```bash
+npm install
+```
+
+3. Запустите сервер:
+```bash
+npm run dev
+```
+
+Сервер будет доступен по адресу `http://localhost:3000`
+
+### Запуск всего проекта
+
+Для одновременного запуска фронтенда и бэкенда используйте:
+
+```bash
+# Терминал 1 - Frontend
+npm run dev
+
+# Терминал 2 - Backend  
+npm run server
+```
+
 ## Структура проекта
 
 ```
-src/
-├── components/
-│   └── ReservationPage.vue    # Основной компонент страницы бронирований
-├── services/
-│   └── api.ts                 # Сервис для работы с API
-├── types/
-│   └── reservation.ts         # TypeScript типы для данных
-├── App.vue                    # Главный компонент приложения
-└── main.ts                    # Точка входа приложения
+├── src/                       # Frontend (Vue приложение)
+│   ├── components/
+│   │   └── ReservationPage.vue    # Основной компонент страницы бронирований
+│   ├── services/
+│   │   └── api.ts                 # Сервис для работы с API
+│   ├── types/
+│   │   └── reservation.ts         # TypeScript типы для данных
+│   ├── App.vue                    # Главный компонент приложения
+│   └── main.ts                    # Точка входа приложения
+├── server/                    # Backend (Express сервер)
+│   ├── index.js                   # Основной файл сервера
+│   ├── package.json               # Зависимости сервера
+│   └── README.md                  # Документация API
+└── package.json               # Зависимости фронтенда
 ```
 
 ## API
 
-Приложение ожидает API с следующей структурой ответа:
+Приложение использует RESTful API, реализованный на Express.js сервере.
+
+### Структура ответа
 
 ```typescript
 interface ReservationData {
@@ -66,8 +106,13 @@ interface ReservationData {
 
 ### Endpoints
 
-- `GET /api/reservations?date={date}` - получение бронирований на конкретную дату
-- `GET /api/reservations/search?q={query}` - поиск бронирований по имени
+- `GET /api/reservations/:date` - получение бронирований на конкретную дату
+- `GET /api/reservations/search/:query` - поиск бронирований по имени
+- `GET /api/restaurant` - информация о ресторане
+- `GET /api/available-days` - доступные дни
+- `GET /health` - проверка состояния сервера
+
+Подробная документация API находится в `server/README.md`
 
 ## Особенности реализации
 

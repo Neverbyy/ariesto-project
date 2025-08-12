@@ -9,43 +9,31 @@ export class ReservationApiService {
   }
 
   async getReservations(date: string): Promise<ReservationData> {
-    try {
-      const response = await fetch(`${this.baseUrl}/api/reservations?date=${date}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+    const timestamp = Date.now();
+    const random = Math.random();
+    const response = await fetch(`${this.baseUrl}/api/reservations/${date}?_t=${timestamp}&_r=${random}`, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
       }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching reservations:', error);
-      throw error;
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+    
+    return await response.json();
   }
 
   async searchReservations(query: string): Promise<ReservationData> {
-    try {
-      const response = await fetch(`${this.baseUrl}/api/reservations/search?q=${encodeURIComponent(query)}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error searching reservations:', error);
-      throw error;
+    const response = await fetch(`${this.baseUrl}/api/reservations/search/${encodeURIComponent(query)}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+    
+    return await response.json();
   }
 }
 

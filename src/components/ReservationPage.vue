@@ -102,7 +102,7 @@
                 >
                   <ReservationItem
                     v-for="item in getItemsForTableAndTime(table, timeSlot)"
-                    :key="item.id"
+                    :key="`${table.id}-${timeSlot}-${item.id}-${item.type}`"
                     :item="item"
                     :time-slot="timeSlot"
                     @click="handleItemClick"
@@ -132,13 +132,13 @@ const searchQuery = ref<string>('');
 // Computed properties
 const restaurant = computed(() => reservationData.value?.restaurant);
 const availableDays = computed(() => {
-  // Если есть данные от API, используем их, иначе генерируем динамически
+  // Используем только данные от API
   if (reservationData.value?.available_days && reservationData.value.available_days.length > 0) {
     return reservationData.value.available_days;
   }
   
-  // Используем функцию для генерации 7 дней
-  return getAvailableDays();
+  // Если нет данных от API, возвращаем пустой массив
+  return [];
 });
 const tables = computed(() => reservationData.value?.tables || []);
 
@@ -151,7 +151,7 @@ const filteredTables = computed(() => {
 const timeSlots = computed(() => {
   if (!restaurant.value) return [];
   
-  const slots = [];
+  const slots: string[] = [];
   const start = restaurant.value.opening_time;
   const end = restaurant.value.closing_time;
   
@@ -163,236 +163,40 @@ const timeSlots = computed(() => {
     currentTime.setMinutes(currentTime.getMinutes() + 30);
   }
   
+  console.log('Generated time slots:', slots);
   return slots;
 });
 
 // Methods
 const fetchReservationData = async (date: string) => {
   try {
+    console.log(`Fetching data for date: ${date}`);
     const data = await reservationApi.getReservations(date);
+    console.log('Data received from API:', data);
+    console.log('Tables count:', data.tables?.length || 0);
+    
+    // Debug: show all orders from all tables
+    data.tables?.forEach((table, index) => {
+      if (table.orders && table.orders.length > 0) {
+        console.log(`Table ${table.number} orders from API:`, table.orders.map(o => ({
+          id: o.id,
+          status: o.status,
+          start_time: o.start_time,
+          end_time: o.end_time
+        })));
+      }
+    });
+    
     reservationData.value = data;
   } catch (error) {
     console.error('Error fetching reservation data:', error);
-    // Fallback to mock data for development
-    reservationData.value = getMockData(date);
+    console.log('API ERROR - NOT using mock data');
+    // Temporarily disable mock data fallback
+    throw error;
   }
 };
 
-const getMockData = (date: string): ReservationData => {
-  return {
-    available_days: getAvailableDays(),
-    current_day: date,
-    restaurant: {
-      id: 11100,
-      timezone: 'Asia/Vladivostok',
-      restaurant_name: 'Супра',
-      opening_time: '11:00',
-      closing_time: '23:40'
-    },
-    tables: [
-      {
-        id: '1',
-        capacity: 2,
-        number: '5',
-        zone: '1 этаж',
-        orders: [
-          {
-            id: '1',
-            status: 'New',
-            start_time: `${date}T13:00:00+10:00`,
-            end_time: `${date}T14:00:00+10:00`
-          }
-        ],
-        reservations: []
-      },
-      {
-        id: '2',
-        capacity: 2,
-        number: '6',
-        zone: '1 этаж',
-        orders: [
-          {
-            id: '2',
-            status: 'Bill',
-            start_time: `${date}T13:00:00+10:00`,
-            end_time: `${date}T14:00:00+10:00`
-          }
-        ],
-        reservations: []
-      },
-      {
-        id: '3',
-        capacity: 6,
-        number: '155',
-        zone: '2 этаж',
-        orders: [
-          {
-            id: '3',
-            status: 'Closed',
-            start_time: `${date}T13:00:00+10:00`,
-            end_time: `${date}T14:00:00+10:00`
-          }
-        ],
-        reservations: []
-      },
-      {
-        id: '4',
-        capacity: 4,
-        number: '20',
-        zone: '1 этаж',
-        orders: [],
-        reservations: [
-          {
-            id: 111,
-            name_for_reservation: 'Миша',
-            num_people: 4,
-            phone_number: '+79999999999',
-            status: 'Живая очередь',
-            seating_time: `${date}T13:00:00+10:00`,
-            end_time: `${date}T14:00:00+10:00`
-          }
-        ]
-      },
-      {
-        id: '5',
-        capacity: 6,
-        number: '21',
-        zone: '1 этаж',
-        orders: [],
-        reservations: [
-          {
-            id: 111,
-            name_for_reservation: 'Алина',
-            num_people: 6,
-            phone_number: '+79999999999',
-            status: 'Новая',
-            seating_time: `${date}T13:00:00+10:00`,
-            end_time: `${date}T14:00:00+10:00`
-          }
-        ]
-      },
-      {
-        id: '6',
-        capacity: 6,
-        number: '22',
-        zone: '1 этаж',
-        orders: [],
-        reservations: [
-          {
-            id: 111,
-            name_for_reservation: 'Алина',
-            num_people: 6,
-            phone_number: '+79999999999',
-            status: 'Заявка',
-            seating_time: `${date}T13:00:00+10:00`,
-            end_time: `${date}T14:00:00+10:00`
-          }
-        ]
-      },
-      {
-        id: '7',
-        capacity: 6,
-        number: '23',
-        zone: '1 этаж',
-        orders: [],
-        reservations: [
-          {
-            id: 111,
-            name_for_reservation: 'Алина',
-            num_people: 6,
-            phone_number: '+79999999999',
-            status: 'Открыт',
-            seating_time: `${date}T13:00:00+10:00`,
-            end_time: `${date}T14:00:00+10:00`
-          }
-        ]
-      },
-      {
-        id: '8',
-        capacity: 6,
-        number: '24',
-        zone: '1 этаж',
-        orders: [],
-        reservations: [
-          {
-            id: 111,
-            name_for_reservation: 'Алина',
-            num_people: 6,
-            phone_number: '+79999999999',
-            status: 'Закрыт',
-            seating_time: `${date}T13:00:00+10:00`,
-            end_time: `${date}T14:00:00+10:00`
-          }
-        ]
-      },
-      {
-        id: '9',
-        capacity: 4,
-        number: '28',
-        zone: '2 этаж',
-        orders: [
-          {
-            id: '4',
-            status: 'Closed',
-            start_time: `${date}T12:32:00+10:00`,
-            end_time: `${date}T13:01:00+10:00`
-          },
-          {
-            id: '5',
-            status: 'Bill',
-            start_time: `${date}T13:43:00+10:00`,
-            end_time: `${date}T14:41:00+10:00`
-          }
-        ],
-        reservations: []
-      },
-      {
-        id: '10',
-        capacity: 4,
-        number: '29',
-        zone: '2 этаж',
-        orders: [
-          {
-            id: '6',
-            status: 'Closed',
-            start_time: `${date}T12:06:00+10:00`,
-            end_time: `${date}T12:51:00+10:00`
-          },
-          {
-            id: '7',
-            status: 'Bill',
-            start_time: `${date}T13:17:00+10:00`,
-            end_time: `${date}T14:12:00+10:00`
-          }
-        ],
-        reservations: []
-      },
-      {
-        id: '11',
-        capacity: 6,
-        number: '30',
-        zone: '2 этаж',
-        orders: [],
-        reservations: []
-      },
-      {
-        id: '12',
-        capacity: 8,
-        number: '191',
-        zone: 'Банкетный зал',
-        orders: [
-          {
-            id: '8',
-            status: 'Banquet',
-            start_time: `${date}T13:00:00+10:00`,
-            end_time: `${date}T14:00:00+10:00`
-          }
-        ],
-        reservations: []
-      }
-    ]
-  };
-};
+
 
 const selectDate = (date: string) => {
   selectedDate.value = date;
@@ -411,10 +215,14 @@ const toggleZone = (zone: ZoneType) => {
 const handleSearch = async () => {
   if (searchQuery.value.trim()) {
     try {
+      console.log(`Searching for: ${searchQuery.value}`);
       const data = await reservationApi.searchReservations(searchQuery.value);
+      console.log('Search results:', data);
       reservationData.value = data;
     } catch (error) {
       console.error('Error searching reservations:', error);
+      // Fallback to current date data on search error
+      fetchReservationData(selectedDate.value);
     }
   } else {
     // If search is empty, fetch current date data
@@ -466,35 +274,67 @@ const getMonthName = (month: number) => {
   return months[month];
 };
 
-// Функция для получения доступных дней (7 дней, начиная с сегодняшнего)
-const getAvailableDays = () => {
-  const today = new Date();
-  const days = [];
-  
-  for (let i = 0; i < 7; i++) {
-    const day = new Date(today);
-    day.setDate(today.getDate() + i);
-    days.push(day.toISOString().split('T')[0]);
+
+
+// Helper function to extract time from ISO string without timezone issues
+const extractTimeFromISO = (isoString: string): string => {
+  // Extract time part from ISO string (HH:MM:SS)
+  const timeMatch = isoString.match(/T(\d{2}:\d{2}):\d{2}/);
+  return timeMatch ? timeMatch[1] : '';
+};
+
+// Debug function to log table data only once
+const logTableData = (table: Table) => {
+  if (table.orders.length > 0) {
+    console.log(`Table ${table.number} orders:`, table.orders.map(o => ({
+      id: o.id,
+      status: o.status,
+      start: extractTimeFromISO(o.start_time),
+      end: extractTimeFromISO(o.end_time)
+    })));
   }
   
-  return days;
+  if (table.reservations.length > 0) {
+    console.log(`Table ${table.number} reservations:`, table.reservations.map(r => ({
+      id: r.id,
+      name: r.name_for_reservation,
+      status: r.status,
+      start: extractTimeFromISO(r.seating_time),
+      end: extractTimeFromISO(r.end_time)
+    })));
+  }
 };
 
 const getItemsForTableAndTime = (table: Table, timeSlot: string) => {
   const items: Array<any> = [];
+  const seenIds = new Set();
+  const seenStartTimes = new Set();
   
-  // Add orders
+  // Log table data only once per table (when timeSlot is the first one)
+  if (timeSlot === timeSlots.value[0]) {
+    logTableData(table);
+  }
+  
+  // Add orders - показываем в ячейке, соответствующей времени начала
   table.orders.forEach(order => {
-    const startTime = new Date(order.start_time).toTimeString().slice(0, 5);
-    if (startTime === timeSlot) {
+    const startTime = extractTimeFromISO(order.start_time);
+    const itemKey = `${order.id}-order`;
+    
+    if (startTime === timeSlot && !seenIds.has(itemKey) && !seenStartTimes.has(startTime)) {
+      seenIds.add(itemKey);
+      seenStartTimes.add(startTime);
       items.push({ ...order, type: 'order' });
     }
   });
   
-  // Add reservations
+  // Add reservations - показываем в ячейке, соответствующей времени начала
   table.reservations.forEach(reservation => {
-    const startTime = new Date(reservation.seating_time).toTimeString().slice(0, 5);
-    if (startTime === timeSlot) {
+    const startTime = extractTimeFromISO(reservation.seating_time);
+    const itemKey = `${reservation.id}-reservation`;
+    
+    if (startTime === timeSlot && !seenIds.has(itemKey) && !seenStartTimes.has(startTime)) {
+      seenIds.add(itemKey);
+      seenStartTimes.add(startTime);
       items.push({ ...reservation, type: 'reservation' });
     }
   });
@@ -508,6 +348,7 @@ const getItemsForTableAndTime = (table: Table, timeSlot: string) => {
 onMounted(() => {
   const today = new Date().toISOString().split('T')[0];
   selectedDate.value = today;
+  console.log('Component mounted, fetching data for:', today);
   fetchReservationData(today);
 });
 </script>
@@ -666,6 +507,13 @@ text-align: left;
   color: #ffffff;
 }
 
+.date-day {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
 .date-label {
   font-size: 0.8rem;
   font-weight: 400;
@@ -788,6 +636,7 @@ text-align: left;
   border-right: 1px solid #404040;
   position: relative;
   padding: 2px;
+  overflow: visible;
 }
 
 
