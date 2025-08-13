@@ -1,16 +1,13 @@
 {
   "name": "ariesto-server",
   "version": "1.0.0",
-  "description": "Express server for Ariesto restaurant booking system",
+  "description": "Express server for restaurant booking system",
   "main": "index.js",
+
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon index.js"
   },
-  "keywords": ["restaurant", "booking", "express", "api"],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5",
@@ -20,4 +17,3 @@
     "nodemon": "^3.0.1"
   }
 }
-

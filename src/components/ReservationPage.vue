@@ -305,37 +305,94 @@ const logTableData = (table: Table) => {
   }
 };
 
+// Helper function to check if two time ranges overlap
+const doTimeRangesOverlap = (start1: string, end1: string, start2: string, end2: string): boolean => {
+  const start1Minutes = parseInt(start1.split(':')[0]) * 60 + parseInt(start1.split(':')[1]);
+  const end1Minutes = parseInt(end1.split(':')[0]) * 60 + parseInt(end1.split(':')[1]);
+  const start2Minutes = parseInt(start2.split(':')[0]) * 60 + parseInt(start2.split(':')[1]);
+  const end2Minutes = parseInt(end2.split(':')[0]) * 60 + parseInt(end2.split(':')[1]);
+  
+  return start1Minutes < end2Minutes && start2Minutes < end1Minutes;
+};
+
 const getItemsForTableAndTime = (table: Table, timeSlot: string) => {
   const items: Array<any> = [];
   const seenIds = new Set();
-  const seenStartTimes = new Set();
   
   // Log table data only once per table (when timeSlot is the first one)
   if (timeSlot === timeSlots.value[0]) {
     logTableData(table);
   }
   
-  // Add orders - показываем в ячейке, соответствующей времени начала
+  // Collect all items (orders and reservations) for this table
+  const allItems: Array<any> = [];
+  
+  // Add orders
   table.orders.forEach(order => {
     const startTime = extractTimeFromISO(order.start_time);
-    const itemKey = `${order.id}-order`;
+    const endTime = extractTimeFromISO(order.end_time);
     
-    if (startTime === timeSlot && !seenIds.has(itemKey) && !seenStartTimes.has(startTime)) {
-      seenIds.add(itemKey);
-      seenStartTimes.add(startTime);
-      items.push({ ...order, type: 'order' });
-    }
+    allItems.push({
+      ...order,
+      type: 'order',
+      startTime,
+      endTime
+    });
   });
   
-  // Add reservations - показываем в ячейке, соответствующей времени начала
+  // Add reservations
   table.reservations.forEach(reservation => {
     const startTime = extractTimeFromISO(reservation.seating_time);
-    const itemKey = `${reservation.id}-reservation`;
+    const endTime = extractTimeFromISO(reservation.end_time);
     
-    if (startTime === timeSlot && !seenIds.has(itemKey) && !seenStartTimes.has(startTime)) {
+    allItems.push({
+      ...reservation,
+      type: 'reservation',
+      startTime,
+      endTime
+    });
+  });
+  
+  // Filter items that should be displayed in this time slot
+  allItems.forEach(item => {
+    const itemKey = `${item.id}-${item.type}`;
+    
+    if (!seenIds.has(itemKey)) {
       seenIds.add(itemKey);
-      seenStartTimes.add(startTime);
-      items.push({ ...reservation, type: 'reservation' });
+      
+      // Check if this item should be shown in this time slot
+      const shouldShow = item.startTime === timeSlot;
+      
+      if (shouldShow) {
+        // Find all items that overlap with this one
+        const overlappingItems = allItems.filter(otherItem => {
+          if (otherItem.id === item.id && otherItem.type === item.type) {
+            return false; // Skip self
+          }
+          return doTimeRangesOverlap(item.startTime, item.endTime, otherItem.startTime, otherItem.endTime);
+        });
+        
+        // Assign overlap index based on position in overlapping group
+        let overlapIndex = 0;
+        if (overlappingItems.length > 0) {
+          // Sort overlapping items by start time to ensure consistent ordering
+          const allOverlapping = [item, ...overlappingItems].sort((a, b) => {
+            const aMinutes = parseInt(a.startTime.split(':')[0]) * 60 + parseInt(a.startTime.split(':')[1]);
+            const bMinutes = parseInt(b.startTime.split(':')[0]) * 60 + parseInt(b.startTime.split(':')[1]);
+            return aMinutes - bMinutes;
+          });
+          
+          // Find position of current item in sorted overlapping group
+          overlapIndex = allOverlapping.findIndex(overlappingItem => 
+            overlappingItem.id === item.id && overlappingItem.type === item.type
+          );
+        }
+        
+        items.push({
+          ...item,
+          overlapIndex: overlapIndex
+        });
+      }
     }
   });
   

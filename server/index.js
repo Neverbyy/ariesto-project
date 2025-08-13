@@ -125,6 +125,41 @@ const generateMockTables = (date) => {
       });
     }
     
+    // Add test overlapping data for table 29
+    if (table.number === '29') {
+      orders.push(
+        {
+          id: '29-overlap-1',
+          status: 'New',
+          start_time: `${date}T12:00:00+10:00`,
+          end_time: `${date}T12:30:00+10:00`
+        },
+        {
+          id: '29-overlap-2',
+          status: 'Bill',
+          start_time: `${date}T12:00:00+10:00`, // Наложение с первым заказом
+          end_time: `${date}T12:15:00+10:00`
+        },
+        {
+          id: '29-overlap-3',
+          status: 'Closed',
+          start_time: `${date}T12:00:00+10:00`, // Наложение с первыми двумя заказами
+          end_time: `${date}T12:10:00+10:00`
+        }
+      );
+      
+      // Add overlapping reservation
+      reservations.push({
+        id: 291,
+        name_for_reservation: 'Миша',
+        num_people: 4,
+        phone_number: '+7-999-123-4567',
+        status: 'Живая очередь',
+        seating_time: `${date}T12:05:00+10:00`, // Наложение с заказами
+        end_time: `${date}T12:20:00+10:00`
+      });
+    }
+    
     return {
       ...table,
       orders,

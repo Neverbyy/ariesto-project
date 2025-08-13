@@ -14,6 +14,10 @@ export const config = {
     timeColumnWidth: 80, // ширина колонки времени
   },
   colors: {
-    // Цвета теперь определены непосредственно в компоненте ReservationItem
+    orderNew: '#4caf50',
+    orderBill: '#ff9800',
+    orderClosed: '#2196f3',
+    orderBanquet: '#9c27b0',
+    reservation: '#f44336',
   },
 };

@@ -83,13 +83,16 @@ const itemStyle = computed(() => {
     ? ((startTotalMinutes - slotTotalMinutes) / config.grid.timeSlotMinutes) * config.grid.timeSlotHeight
     : 0;
   
+  // Calculate overlap offset - 10px margin-left for each overlapping item
+  const overlapOffset = (props.item.overlapIndex || 0) * 10;
+  
   // Calculate z-index based on start time - later times appear on top
-  const zIndex = 10 + startTotalMinutes;
+  const zIndex = 10 + startTotalMinutes + (props.item.overlapIndex || 0);
   
   return {
-    height: `${duration / config.grid.timeSlotMinutes * config.grid.timeSlotHeight}px`,
     minHeight: `${config.grid.timeSlotHeight}px`,
     top: `${topOffset}px`,
+    marginLeft: `${overlapOffset}px`,
     zIndex: zIndex
   };
 });
