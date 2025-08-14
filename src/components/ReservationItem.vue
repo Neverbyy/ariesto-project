@@ -1,8 +1,10 @@
 <template>
   <div
-    :class="['reservation-item', itemClass]"
+    :class="['reservation-item', itemClass, { hovered: isHovered }]"
     :style="itemStyle"
     @click="handleClick"
+    @mouseenter="isHovered = true"
+    @mouseleave="isHovered = false"
   >
     <div class="item-content">
       <!-- For orders: separate title, status badge, and time -->
@@ -12,20 +14,22 @@
         <div class="time-display">{{ orderTimeText }}</div>
       </template>
       
-      <!-- For reservations: separate name, time, status, people, and phone -->
+      <!-- For reservations: compact info + extra on hover -->
       <template v-else>
         <div class="item-title">{{ itemTitle }}</div>
         <div class="time-display">{{ reservationTimeText }}</div>
         <div class="status-badge">{{ reservationStatusText }}</div>
-        <div class="people-text">{{ reservationPeopleText }}</div>
-        <div class="phone-text">{{ reservationPhoneText }}</div>
+        <div v-if="isHovered" class="hover-extra">
+          <div class="phone-text">📞 {{ phoneSuffix }}</div>
+          <div class="people-text">{{ reservationPeopleText }}</div>
+        </div>
       </template>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { config } from '../config';
 
 interface Props {
@@ -38,6 +42,8 @@ const props = defineProps<Props>();
 const emit = defineEmits<{
   click: [item: any];
 }>();
+
+const isHovered = ref(false);
 
 const itemClass = computed(() => {
   if (props.item.type === 'order') {
@@ -86,15 +92,16 @@ const itemStyle = computed(() => {
   // Calculate overlap offset - 10px margin-left for each overlapping item
   const overlapOffset = (props.item.overlapIndex || 0) * 10;
   
-  // Calculate z-index based on start time - later times appear on top
-  const zIndex = 10 + startTotalMinutes + (props.item.overlapIndex || 0);
+  // Raise z-index on hover to overlay others
+  const baseZ = 10 + startTotalMinutes + (props.item.overlapIndex || 0);
+  const zIndex = isHovered.value ? 2000 : baseZ;
   
   return {
     minHeight: `${config.grid.timeSlotHeight}px`,
     top: `${topOffset}px`,
     marginLeft: `${overlapOffset}px`,
     zIndex: zIndex
-  };
+  } as Record<string, string | number>;
 });
 
 const itemTitle = computed(() => {
@@ -144,34 +151,14 @@ const reservationPeopleText = computed(() => {
   return '';
 });
 
-const reservationPhoneText = computed(() => {
+const phoneSuffix = computed(() => {
   if (props.item.type === 'reservation') {
-    return `Тел: ${props.item.phone_number}`;
+    return String(props.item.phone_number).slice(-4);
   }
   return '';
 });
 
-const itemSubtitle = computed(() => {
-  if (props.item.type === 'order') {
-    const statusMap: Record<string, string> = {
-      'New': 'Новый',
-      'Bill': 'Пречек',
-      'Closed': 'Закрытый',
-      'Banquet': 'Банкет'
-    };
-    
-    const startTime = extractTimeFromISO(props.item.start_time);
-    const endTime = extractTimeFromISO(props.item.end_time);
-    
-    return `${statusMap[props.item.status] || props.item.status} ${startTime}-${endTime}`;
-  } else {
-    const phoneSuffix = props.item.phone_number.slice(-4);
-    return `${props.item.num_people}чел ${props.item.status} ${phoneSuffix}`;
-  }
-});
-
 const handleClick = () => {
-  console.log('ReservationItem clicked:', props.item);
   emit('click', props.item);
 };
 </script>
@@ -187,14 +174,13 @@ const handleClick = () => {
   font-weight: 500;
   overflow: hidden;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   color: #ffffff;
 }
 
-.reservation-item:hover {
-  opacity: 0.9;
+.reservation-item.hovered {
   transform: scale(1.02);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
 }
 
 .item-content {
@@ -233,57 +219,27 @@ const handleClick = () => {
   margin: 0;
 }
 
-.people-text {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 0.7rem;
-  opacity: 0.9;
-  margin: 0;
+.hover-extra {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
-.phone-text {
+.people-text, .phone-text {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 0.7rem;
-  opacity: 0.9;
+  font-size: 0.75rem;
+  opacity: 0.95;
   margin: 0;
-}
-
-.item-subtitle {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 0.7rem;
-  opacity: 0.9;
 }
 
 /* Order Types */
-.order-new {
-  background-color: #2f3c3c;
-  border-left: 3px solid #66b2b2;
-}
-
-.order-bill {
-  background-color: #2f3c3c;
-  border-left: 3px solid #66b2b2;
-}
-
-.order-closed {
-  background-color: #2f3c3c;
-  border-left: 3px solid #66b2b2;
-}
-
-.order-banquet {
-  background-color: #2f3c3c;
-  border-left: 3px solid #66b2b2;
-}
-
-.order-default {
-  background-color: #2f3c3c;
-  border-left: 3px solid #66b2b2;
-}
+.order-new { background-color: #2f3c3c; border-left: 3px solid #66b2b2; }
+.order-bill { background-color: #2f3c3c; border-left: 3px solid #66b2b2; }
+.order-closed { background-color: #2f3c3c; border-left: 3px solid #66b2b2; }
+.order-banquet { background-color: #2f3c3c; border-left: 3px solid #66b2b2; }
+.order-default { background-color: #2f3c3c; border-left: 3px solid #66b2b2; }
 
 /* Reservation Items */
 .reservation-item:not(.order-new):not(.order-bill):not(.order-closed):not(.order-banquet):not(.order-default) {
