@@ -353,45 +353,75 @@ const getItemsForTableAndTime = (table: Table, timeSlot: string) => {
     });
   });
   
+  // Calculate overlap indices for ALL items first (global calculation)
+  const itemsWithOverlap = allItems.map(item => {
+    // Find all items that overlap with this one (any type)
+    const overlappingItems = allItems.filter(otherItem => {
+      if (otherItem.id === item.id && otherItem.type === item.type) {
+        return false; // Skip self
+      }
+      return doTimeRangesOverlap(item.startTime, item.endTime, otherItem.startTime, otherItem.endTime);
+    });
+    
+    // Assign overlap index based on priority and position
+    let overlapIndex = 0;
+    if (overlappingItems.length > 0) {
+      // Sort overlapping items by start time first, then by type priority
+      const allOverlapping = [item, ...overlappingItems].sort((a, b) => {
+        // First sort by start time (earlier items get lower overlapIndex)
+        const aMinutes = parseInt(a.startTime.split(':')[0]) * 60 + parseInt(a.startTime.split(':')[1]);
+        const bMinutes = parseInt(b.startTime.split(':')[0]) * 60 + parseInt(b.startTime.split(':')[1]);
+        if (aMinutes !== bMinutes) {
+          return aMinutes - bMinutes;
+        }
+        
+        // If start times are equal, then use type priority: orders > live queue > other reservations
+        if (a.type !== b.type) {
+          if (a.type === 'order') return -1;
+          if (b.type === 'order') return 1;
+        }
+        // Within reservations, live queue has priority
+        if (a.type === 'reservation' && b.type === 'reservation') {
+          if (a.status === 'Живая очередь' && b.status !== 'Живая очередь') return -1;
+          if (a.status !== 'Живая очередь' && b.status === 'Живая очередь') return 1;
+        }
+        return 0;
+      });
+      
+      // Find position of current item in sorted overlapping group
+      overlapIndex = allOverlapping.findIndex(overlappingItem => 
+        overlappingItem.id === item.id && overlappingItem.type === item.type
+      );
+      
+      // Debug logging for table 28
+      if (table.number === '28') {
+        console.log(`Item ${item.id} (${item.startTime}-${item.endTime}) has overlapIndex: ${overlapIndex}`);
+        console.log('Overlapping items (any type):', overlappingItems.map(o => `${o.id} (${o.startTime}-${o.endTime})`));
+        console.log('Sorted overlapping group:', allOverlapping.map(o => `${o.id} (${o.startTime}-${o.endTime})`));
+      }
+    }
+    
+    return {
+      ...item,
+      overlapIndex: overlapIndex
+    };
+  });
+  
   // Filter items that should be displayed in this time slot
-  allItems.forEach(item => {
+  itemsWithOverlap.forEach(item => {
     const itemKey = `${item.id}-${item.type}`;
     
     if (!seenIds.has(itemKey)) {
       seenIds.add(itemKey);
       
       // Check if this item should be shown in this time slot
-      const shouldShow = item.startTime === timeSlot;
+      // Для заказов показываем в слоте начала, для бронирований - в слоте начала
+      const shouldShow = item.type === 'order' 
+        ? item.startTime === timeSlot // Заказы показываем в слоте начала
+        : item.startTime === timeSlot; // Бронирования показываем в слоте начала
       
       if (shouldShow) {
-        // Find all items that overlap with this one
-        const overlappingItems = allItems.filter(otherItem => {
-          if (otherItem.id === item.id && otherItem.type === item.type) {
-            return false; // Skip self
-          }
-          return doTimeRangesOverlap(item.startTime, item.endTime, otherItem.startTime, otherItem.endTime);
-        });
-        
-        // Assign overlap index based on position in overlapping group
-        let overlapIndex = 0;
-        if (overlappingItems.length > 0) {
-          // Sort overlapping items by start time to ensure consistent ordering
-          const allOverlapping = [item, ...overlappingItems].sort((a, b) => {
-            const aMinutes = parseInt(a.startTime.split(':')[0]) * 60 + parseInt(a.startTime.split(':')[1]);
-            const bMinutes = parseInt(b.startTime.split(':')[0]) * 60 + parseInt(b.startTime.split(':')[1]);
-            return aMinutes - bMinutes;
-          });
-          
-          // Find position of current item in sorted overlapping group
-          overlapIndex = allOverlapping.findIndex(overlappingItem => 
-            overlappingItem.id === item.id && overlappingItem.type === item.type
-          );
-        }
-        
-        items.push({
-          ...item,
-          overlapIndex: overlapIndex
-        });
+        items.push(item);
       }
     }
   });
@@ -694,6 +724,7 @@ text-align: left;
   position: relative;
   padding: 2px;
   overflow: visible;
+  min-height: 50px;
 }
 
 

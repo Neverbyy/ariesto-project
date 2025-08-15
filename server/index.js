@@ -18,32 +18,97 @@ const mockRestaurant = {
   closing_time: '23:40'
 };
 
-// Helper function to generate random data based on date
-const generateRandomData = (date, seed) => {
-  const dateObj = new Date(date);
-  const dayOfWeek = dateObj.getDay(); // 0 = Sunday, 1 = Monday, etc.
-  const dayOfMonth = dateObj.getDate();
-  
-  // Create a deterministic seed based on date
-  const dateSeed = dayOfWeek * 31 + dayOfMonth;
-  const random = (min, max) => {
-    const x = Math.sin(dateSeed + seed) * 10000;
-    return Math.floor((x - Math.floor(x)) * (max - min + 1)) + min;
-  };
-  
-  return { random, dayOfWeek, dayOfMonth };
+// Sample data arrays (kept for potential future use)
+const orderStatuses = ['New', 'Bill', 'Closed', 'Banquet'];
+
+// Hardcoded orders by table number (keeps overlaps like in the UI example)
+const hardcodedOrdersByTableNumber = {
+  '29': [
+    { id: '29-1', status: 'New', start: '12:00', end: '19:00' },
+    { id: '29-2', status: 'Bill', start: '13:00', end: '14:00' },
+    { id: '29-3', status: 'Closed', start: '15:00', end: '17:00' }
+  ],
+  '5': [
+    { id: '5-1', status: 'New', start: '11:30', end: '12:30' },
+    { id: '5-2', status: 'Bill', start: '16:00', end: '18:00' }
+  ],
+  '6': [
+    { id: '6-1', status: 'Closed', start: '12:00', end: '14:00' }
+  ],
+  '20': [
+    { id: '20-1', status: 'New', start: '13:00', end: '15:00' }
+  ],
+  '21': [
+    { id: '21-1', status: 'Banquet', start: '18:00', end: '21:30' },
+    { id: '21-2', status: 'New', start: '22:00', end: '23:00' }
+  ],
+  '22': [
+    { id: '22-1', status: 'Bill', start: '19:00', end: '21:00' }
+  ],
+  '23': [
+    { id: '23-1', status: 'Closed', start: '14:00', end: '16:00' }
+  ],
+  '24': [
+    { id: '24-1', status: 'New', start: '15:00', end: '17:00' }
+  ],
+  '155': [
+    { id: '155-1', status: 'Banquet', start: '17:00', end: '22:00' }
+  ],
+  '28': [
+    { id: '28-1', status: 'New', start: '16:00', end: '20:00' },
+    { id: '28-2', status: 'Bill', start: '17:00', end: '18:30' }
+  ],
+  '30': [
+    { id: '30-1', status: 'Bill', start: '18:00', end: '20:00' }
+  ],
+  '191': [
+    { id: '191-1', status: 'Banquet', start: '19:00', end: '23:00' }
+  ]
 };
 
-// Sample data arrays
-const customerNames = ['Анна', 'Михаил', 'Елена', 'Дмитрий', 'Ольга', 'Сергей', 'Мария', 'Алексей', 'Наталья', 'Игорь', 'Татьяна', 'Владимир', 'Юлия', 'Андрей', 'Екатерина'];
-const phoneNumbers = ['+79991234567', '+79987654321', '+79995556677', '+79998889900', '+79991112233', '+79994445566', '+79997778899'];
-const orderStatuses = ['New', 'Bill', 'Closed', 'Banquet'];
-const reservationStatuses = ['Живая очередь', 'Новая', 'Заявка', 'Открыт', 'Закрыт'];
-const timeSlots = ['11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30', '22:00', '22:30'];
+// Hardcoded reservations by table number
+const hardcodedReservationsByTableNumber = {
+  '5': [
+    { id: '5-res-1', name: 'Анна', people: 4, phone: '+79991234567', status: 'Новая', start: '13:00', end: '15:00' },
+    { id: '5-res-2', name: 'Сергей', people: 2, phone: '+79998889900', status: 'Открыт', start: '20:00', end: '22:00' }
+  ],
+  '6': [
+    { id: '6-res-1', name: 'Мария', people: 3, phone: '+79991112233', status: 'Заявка', start: '14:00', end: '16:00' }
+  ],
+  '20': [
+    { id: '20-res-1', name: 'Михаил', people: 2, phone: '+79987654321', status: 'Живая очередь', start: '14:00', end: '16:00' },
+    { id: '20-res-2', name: 'Ольга', people: 5, phone: '+79994445566', status: 'Новая', start: '18:00', end: '20:00' }
+  ],
+  '21': [
+    { id: '21-res-1', name: 'Дмитрий', people: 6, phone: '+79997778899', status: 'Открыт', start: '15:00', end: '17:00' }
+  ],
+  '22': [
+    { id: '22-res-2', name: 'Алексей', people: 4, phone: '+79993334445', status: 'Живая очередь', start: '21:00', end: '22:30' }
+  ],
+  '23': [
+    { id: '23-res-1', name: 'Наталья', people: 3, phone: '+79996667788', status: 'Новая', start: '16:00', end: '18:00' }
+  ],
+  '24': [
+    { id: '24-res-1', name: 'Игорь', people: 7, phone: '+79992223334', status: 'Заявка', start: '17:00', end: '19:00' }
+  ],
+  '155': [
+    { id: '155-res-1', name: 'Татьяна', people: 8, phone: '+79995556667', status: 'Открыт', start: '18:00', end: '20:00' }
+  ],
+  '28': [
+    { id: '28-res-1', name: 'Владимир', people: 4, phone: '+79998887766', status: 'Живая очередь', start: '15:00', end: '17:00' }
+  ],
+  '29': [
+    { id: '29-res-1', name: 'Юлия', people: 5, phone: '+79991112233', status: 'Новая', start: '20:00', end: '22:00' }
+  ],
+  '30': [
+    { id: '30-res-1', name: 'Андрей', people: 6, phone: '+79994443332', status: 'Заявка', start: '19:00', end: '21:00' }
+  ],
+  '191': [
+    { id: '191-res-1', name: 'Екатерина', people: 10, phone: '+79997776665', status: 'Открыт', start: '20:00', end: '23:00' }
+  ]
+};
 
 const generateMockTables = (date) => {
-  const { random, dayOfWeek, dayOfMonth } = generateRandomData(date, 0);
-  
   // Base tables configuration
   const baseTables = [
     { id: '1', capacity: 2, number: '5', zone: '1 этаж' },
@@ -60,105 +125,26 @@ const generateMockTables = (date) => {
     { id: '12', capacity: 8, number: '191', zone: 'Банкетный зал' }
   ];
 
-  return baseTables.map((table, index) => {
-    const tableSeed = index * 100;
-    const { random: tableRandom } = generateRandomData(date, tableSeed);
+  return baseTables.map((table) => {
     
-    // Track used time slots to avoid conflicts
-    const usedTimeSlots = new Set();
+    // Use hardcoded orders for this table (no random generation)
+    const orders = (hardcodedOrdersByTableNumber[table.number] || []).map((o) => ({
+      id: o.id,
+      status: o.status,
+      start_time: `${date}T${o.start}:00+10:00`,
+      end_time: `${date}T${o.end}:00+10:00`
+    }));
     
-    // Generate orders for this table
-    const orders = [];
-    const orderCount = tableRandom(0, 3); // 0-3 orders per table
-    const availableTimeSlots = [...timeSlots];
-    
-    for (let i = 0; i < orderCount && availableTimeSlots.length > 0; i++) {
-      // Find an available time slot
-      const randomIndex = tableRandom(0, availableTimeSlots.length - 1);
-      const startTime = availableTimeSlots[randomIndex];
-      const startTimeIndex = timeSlots.indexOf(startTime);
-      
-      // Remove used time slot from available slots
-      availableTimeSlots.splice(randomIndex, 1);
-      usedTimeSlots.add(startTime);
-      
-      // Calculate end time (ensure it doesn't exceed timeSlots bounds)
-      const durationSlots = tableRandom(1, Math.min(3, timeSlots.length - startTimeIndex - 1));
-      const endTimeIndex = Math.min(startTimeIndex + durationSlots, timeSlots.length - 1);
-      const endTime = timeSlots[endTimeIndex];
-      
-      orders.push({
-        id: `${table.id}-order-${i + 1}`,
-        status: orderStatuses[tableRandom(0, orderStatuses.length - 1)],
-        start_time: `${date}T${startTime}:00+10:00`,
-        end_time: `${date}T${endTime}:00+10:00`
-      });
-    }
-    
-    // Generate reservations for this table
-    const reservations = [];
-    const reservationCount = tableRandom(0, 2); // 0-2 reservations per table
-    
-    for (let i = 0; i < reservationCount && availableTimeSlots.length > 0; i++) {
-      // Find an available time slot
-      const randomIndex = tableRandom(0, availableTimeSlots.length - 1);
-      const startTime = availableTimeSlots[randomIndex];
-      const startTimeIndex = timeSlots.indexOf(startTime);
-      
-      // Remove used time slot from available slots
-      availableTimeSlots.splice(randomIndex, 1);
-      usedTimeSlots.add(startTime);
-      
-      // Calculate end time (ensure it doesn't exceed timeSlots bounds)
-      const durationSlots = tableRandom(1, Math.min(4, timeSlots.length - startTimeIndex - 1));
-      const endTimeIndex = Math.min(startTimeIndex + durationSlots, timeSlots.length - 1);
-      const endTime = timeSlots[endTimeIndex];
-      
-      reservations.push({
-        id: parseInt(`${table.id}${i + 1}`),
-        name_for_reservation: customerNames[tableRandom(0, customerNames.length - 1)],
-        num_people: tableRandom(1, table.capacity),
-        phone_number: phoneNumbers[tableRandom(0, phoneNumbers.length - 1)],
-        status: reservationStatuses[tableRandom(0, reservationStatuses.length - 1)],
-        seating_time: `${date}T${startTime}:00+10:00`,
-        end_time: `${date}T${endTime}:00+10:00`
-      });
-    }
-    
-    // Add test overlapping data for table 29
-    if (table.number === '29') {
-      orders.push(
-        {
-          id: '29-overlap-1',
-          status: 'New',
-          start_time: `${date}T12:00:00+10:00`,
-          end_time: `${date}T12:30:00+10:00`
-        },
-        {
-          id: '29-overlap-2',
-          status: 'Bill',
-          start_time: `${date}T12:00:00+10:00`, // Наложение с первым заказом
-          end_time: `${date}T12:15:00+10:00`
-        },
-        {
-          id: '29-overlap-3',
-          status: 'Closed',
-          start_time: `${date}T12:00:00+10:00`, // Наложение с первыми двумя заказами
-          end_time: `${date}T12:10:00+10:00`
-        }
-      );
-      
-      // Add overlapping reservation
-      reservations.push({
-        id: 291,
-        name_for_reservation: 'Миша',
-        num_people: 4,
-        phone_number: '+7-999-123-4567',
-        status: 'Живая очередь',
-        seating_time: `${date}T12:05:00+10:00`, // Наложение с заказами
-        end_time: `${date}T12:20:00+10:00`
-      });
-    }
+    // Use hardcoded reservations for this table
+    const reservations = (hardcodedReservationsByTableNumber[table.number] || []).map((r) => ({
+      id: r.id,
+      name_for_reservation: r.name,
+      num_people: r.people,
+      phone_number: r.phone,
+      status: r.status,
+      seating_time: `${date}T${r.start}:00+10:00`,
+      end_time: `${date}T${r.end}:00+10:00`
+    }));
     
     return {
       ...table,

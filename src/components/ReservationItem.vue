@@ -82,12 +82,23 @@ const itemStyle = computed(() => {
     ? ((startTotalMinutes - slotTotalMinutes) / config.grid.timeSlotMinutes) * config.grid.timeSlotHeight
     : 0;
   
+  // Вычисляем высоту карточки на основе продолжительности заказа
+  const itemHeight = Math.max(
+    config.grid.timeSlotHeight, // Минимальная высота
+    (duration / config.grid.timeSlotMinutes) * config.grid.timeSlotHeight // Высота по продолжительности
+  );
+  
   const overlapOffset = (props.item.overlapIndex || 0) * 10;
   const baseZ = 10 + startTotalMinutes + (props.item.overlapIndex || 0);
   const zIndex = isHovered.value ? 2000 : baseZ;
   
+  // Debug logging for table 28
+  if (props.item.id && props.item.id.includes('28')) {
+    console.log(`ReservationItem ${props.item.id}: overlapIndex=${props.item.overlapIndex}, overlapOffset=${overlapOffset}px`);
+  }
+  
   return {
-    minHeight: `${config.grid.timeSlotHeight}px`,
+    height: `${itemHeight}px`,
     top: `${topOffset}px`,
     marginLeft: `${overlapOffset}px`,
     zIndex: zIndex
@@ -141,6 +152,9 @@ const handleClick = () => emit('click', props.item);
   cursor: pointer;
   transition: all 0.15s ease;
   color: #ffffff;
+  box-sizing: border-box;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
 .reservation-item.hovered {
@@ -189,9 +203,8 @@ const handleClick = () => emit('click', props.item);
 /* #FF704329 — Бронирования (прочие статусы) */
 .reservation-regular { background-color: #FF704329; border-left: 3px solid #FF7043; }
 
-/* Blur backdrop on hover for better readability while keeping transparency */
+/* Keep hover visual emphasis without changing backdrop effect */
 .reservation-item.hovered {
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
+  /* backdrop blur already applied in base state */
 }
 </style>
