@@ -17,7 +17,7 @@
         <div class="item-title">{{ itemTitle }}</div>
         <div class="time-display">{{ reservationTimeText }}</div>
         <div class="status-badge">{{ reservationStatusText }}</div>
-        <div v-if="isHovered" class="hover-extra">
+        <div class="hover-extra" v-if="showExtraInfo">
           <div class="phone-text">📞 {{ phoneSuffix }}</div>
           <div class="people-text">{{ reservationPeopleText }}</div>
         </div>
@@ -27,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 
 interface Props {
   item: any;
@@ -42,17 +42,34 @@ const emit = defineEmits<{
 
 const isHovered = ref(false);
 
-// Get scale from parent component via CSS custom properties
-const getScale = () => {
+// Reactive scale tracking
+const scale = ref({ horizontalScale: 1, verticalScale: 1 });
+
+// Update scale when component mounts and when parent scale changes
+const updateScale = () => {
   const parentElement = document.querySelector('.reservation-grid-container');
   if (parentElement) {
     const styles = getComputedStyle(parentElement);
     const horizontalScale = parseFloat(styles.getPropertyValue('--horizontal-scale')) || 1;
     const verticalScale = parseFloat(styles.getPropertyValue('--vertical-scale')) || 1;
-    return { horizontalScale, verticalScale };
+    scale.value = { horizontalScale, verticalScale };
   }
-  return { horizontalScale: 1, verticalScale: 1 };
 };
+
+// Watch for scale changes by polling (since CSS custom properties don't trigger reactivity)
+let scaleInterval: number | null = null;
+
+onMounted(() => {
+  updateScale();
+  // Check for scale changes every 100ms
+  scaleInterval = setInterval(updateScale, 100);
+});
+
+onUnmounted(() => {
+  if (scaleInterval) {
+    clearInterval(scaleInterval);
+  }
+});
 
 const itemClass = computed(() => {
   if (props.item.type === 'order') {
@@ -89,7 +106,7 @@ const itemStyle = computed(() => {
   const [slotHours, slotMinutes] = timeSlotTime.split(':').map(Number);
   const slotTotalMinutes = slotHours * 60 + slotMinutes;
   
-  const { horizontalScale, verticalScale } = getScale();
+  const { horizontalScale, verticalScale } = scale.value;
   
   const topOffset = startTotalMinutes > slotTotalMinutes 
     ? ((startTotalMinutes - slotTotalMinutes) / 30) * 50 * verticalScale
@@ -149,6 +166,28 @@ const reservationStatusText = computed(() => props.item.type === 'reservation' ?
 const reservationPeopleText = computed(() => props.item.type === 'reservation' ? `${props.item.num_people} чел` : '');
 const phoneSuffix = computed(() => props.item.type === 'reservation' ? String(props.item.phone_number).slice(-4) : '');
 
+// Определяем, показывать ли дополнительную информацию (телефон и количество людей)
+const showExtraInfo = computed(() => {
+  if (props.item.type !== 'reservation') return false;
+  
+  // Получаем продолжительность бронирования
+  const startTimeStr = props.item.seating_time;
+  const endTimeStr = props.item.end_time;
+  
+  const startTime = extractTimeFromISO(startTimeStr);
+  const endTime = extractTimeFromISO(endTimeStr);
+  
+  const [startHours, startMinutes] = startTime.split(':').map(Number);
+  const [endHours, endMinutes] = endTime.split(':').map(Number);
+  
+  const startTotalMinutes = startHours * 60 + startMinutes;
+  const endTotalMinutes = endHours * 60 + endMinutes;
+  const duration = endTotalMinutes - startTotalMinutes;
+  
+  // Показываем дополнительную информацию только для бронирований с маленьким диапазоном (менее 2 часов)
+  return duration < 120; // 120 минут = 2 часа
+});
+
 const handleClick = () => emit('click', props.item);
 </script>
 
@@ -206,6 +245,8 @@ const handleClick = () => emit('click', props.item);
 .hover-extra { display: flex; gap: 8px; align-items: center; }
 .people-text, .phone-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.75rem; opacity: 0.95; margin: 0; }
 
+
+
 /* Colors per spec */
 /* #7FD7CC29 — обычные заказы (Новый, Пречек, Закрытый) */
 .order-regular { background-color: #7FD7CC29; border-left: 3px solid #7FD7CC; }
@@ -216,8 +257,4 @@ const handleClick = () => emit('click', props.item);
 /* #FF704329 — Бронирования (прочие статусы) */
 .reservation-regular { background-color: #FF704329; border-left: 3px solid #FF7043; }
 
-/* Keep hover visual emphasis without changing backdrop effect */
-.reservation-item.hovered {
-  /* backdrop blur already applied in base state */
-}
 </style>

@@ -135,7 +135,7 @@ import ReservationItem from './ReservationItem.vue';
 // Reactive data
 const reservationData = ref<ReservationData | null>(null);
 const selectedDate = ref<string>('');
-const selectedZones = ref<ZoneType[]>(['1 этаж', '2 этаж']);
+const selectedZones = ref<ZoneType[]>([]);
 const searchQuery = ref<string>('');
 
 // Scale state
@@ -156,6 +156,30 @@ const availableDays = computed(() => {
 const tables = computed(() => reservationData.value?.tables || []);
 
 const zones: ZoneType[] = ['1 этаж', '2 этаж', 'Банкетный зал'];
+
+// Функции для работы с localStorage
+const saveSelectedZones = (zones: ZoneType[]) => {
+  try {
+    localStorage.setItem('selectedZones', JSON.stringify(zones));
+  } catch (error) {
+    console.error('Error saving selected zones to localStorage:', error);
+  }
+};
+
+const loadSelectedZones = (): ZoneType[] => {
+  try {
+    const saved = localStorage.getItem('selectedZones');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Проверяем, что загруженные зоны существуют в списке доступных зон
+      return parsed.filter((zone: ZoneType) => zones.includes(zone));
+    }
+  } catch (error) {
+    console.error('Error loading selected zones from localStorage:', error);
+  }
+  // Возвращаем значения по умолчанию, если ничего не сохранено или произошла ошибка
+  return ['1 этаж', '2 этаж'];
+};
 
 const filteredTables = computed(() => {
   return tables.value.filter(table => selectedZones.value.includes(table.zone));
@@ -231,6 +255,8 @@ const toggleZone = (zone: ZoneType) => {
   } else {
     selectedZones.value.push(zone);
   }
+  // Сохраняем состояние в localStorage
+  saveSelectedZones(selectedZones.value);
 };
 
 const handleSearch = async () => {
@@ -465,6 +491,9 @@ const getItemsForTableAndTime = (table: Table, timeSlot: string) => {
 
 // Lifecycle
 onMounted(() => {
+  // Загружаем сохраненные зоны
+  selectedZones.value = loadSelectedZones();
+  
   const today = new Date().toISOString().split('T')[0];
   selectedDate.value = today;
   console.log('Component mounted, fetching data for:', today);
@@ -652,7 +681,7 @@ text-align: left;
   position: relative;
   
   /* Custom scrollbar styles */
-  scrollbar-width: thin;
+  scrollbar-width: auto;
   scrollbar-color: #606060 #2a2a2a;
 }
 
