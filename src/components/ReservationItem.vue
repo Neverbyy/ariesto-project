@@ -174,50 +174,6 @@ const phoneSuffix = computed(() => props.item.type === 'reservation' ? String(pr
 const orderPhoneSuffix = computed(() => props.item.type === 'order' && props.item.customer_phone ? String(props.item.customer_phone).slice(-4) : '');
 const orderPeopleText = computed(() => props.item.type === 'order' && props.item.num_people ? `${props.item.num_people} чел` : '');
 
-// Определяем, показывать ли дополнительную информацию для бронирований (телефон и количество людей)
-const showExtraInfo = computed(() => {
-  if (props.item.type !== 'reservation') return false;
-  
-  // Получаем продолжительность бронирования
-  const startTimeStr = props.item.seating_time;
-  const endTimeStr = props.item.end_time;
-  
-  const startTime = extractTimeFromISO(startTimeStr);
-  const endTime = extractTimeFromISO(endTimeStr);
-  
-  const [startHours, startMinutes] = startTime.split(':').map(Number);
-  const [endHours, endMinutes] = endTime.split(':').map(Number);
-  
-  const startTotalMinutes = startHours * 60 + startMinutes;
-  const endTotalMinutes = endHours * 60 + endMinutes;
-  const duration = endTotalMinutes - startTotalMinutes;
-  
-  // Показываем дополнительную информацию только для бронирований с маленьким диапазоном (менее 2 часов)
-  return duration < 120; // 120 минут = 2 часа
-});
-
-// Определяем, показывать ли дополнительную информацию для заказов (телефон и количество людей)
-const showOrderExtraInfo = computed(() => {
-  if (props.item.type !== 'order') return false;
-  
-  // Получаем продолжительность заказа
-  const startTimeStr = props.item.start_time;
-  const endTimeStr = props.item.end_time;
-  
-  const startTime = extractTimeFromISO(startTimeStr);
-  const endTime = extractTimeFromISO(endTimeStr);
-  
-  const [startHours, startMinutes] = startTime.split(':').map(Number);
-  const [endHours, endMinutes] = endTime.split(':').map(Number);
-  
-  const startTotalMinutes = startHours * 60 + startMinutes;
-  const endTotalMinutes = endHours * 60 + endMinutes;
-  const duration = endTotalMinutes - startTotalMinutes;
-  
-  // Показываем дополнительную информацию только для заказов с маленьким диапазоном (менее 2 часов)
-  return duration < 120; // 120 минут = 2 часа
-});
-
 const handleClick = () => emit('click', props.item);
 </script>
 
