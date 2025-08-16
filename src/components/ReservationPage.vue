@@ -62,6 +62,14 @@
         </div>
       </div>
 
+      <!-- Drag Instructions -->
+      <div class="drag-instructions">
+        <div class="instruction-icon">💡</div>
+        <div class="instruction-text">
+          <strong>Создание заказа:</strong> Зажмите левую кнопку мыши на ячейке и протяните вниз для выбора времени или вправо для выбора нескольких столов
+        </div>
+      </div>
+
       <!-- Reservation Grid -->
       <div class="reservation-grid-container" :style="gridStyles">
         <div class="grid-wrapper">
@@ -96,11 +104,19 @@
                 v-for="table in filteredTables"
                 :key="table.id"
                 class="table-column"
+                :class="{ 'dragging-horizontal': isDragging && dragData.isHorizontalDrag && dragData.selectedTables.some(t => t.id === table.id) }"
               >
                 <div
                   v-for="timeSlot in timeSlots"
                   :key="timeSlot"
                   class="table-cell"
+                  @mousedown="handleMouseDown($event, table, timeSlot)"
+                  @mouseenter="handleMouseEnter($event, table, timeSlot)"
+                  @mouseup="handleMouseUp"
+                  :class="{ 
+                    'dragging': isDragging && isInDragRange(timeSlot) && isTableSelected(table),
+                    'dragging-horizontal': isDragging && dragData.isHorizontalDrag && isInDragRange(timeSlot) && isTableSelected(table)
+                  }"
                 >
                   <ReservationItem
                     v-for="item in getItemsForTableAndTime(table, timeSlot)"
@@ -125,6 +141,88 @@
         </div>
       </div>
     </main>
+
+    <!-- New Order Modal -->
+    <div v-if="showNewOrderModal" class="modal-overlay" @click="closeNewOrderModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>Новый заказ</h3>
+          <button class="modal-close" @click="closeNewOrderModal">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="order-details">
+            <div class="detail-row">
+              <span class="detail-label">Дата:</span>
+              <span class="detail-value">{{ formatDateForModal(selectedDate) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Время:</span>
+              <span class="detail-value">{{ newOrderData.startTime }} – {{ newOrderData.endTime }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Длительность:</span>
+              <span class="detail-value">{{ newOrderData.duration }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Столы:</span>
+              <span class="detail-value">{{ newOrderData.selectedTables.map(t => `#${t.number}`).join(' + ') }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Общая вместимость:</span>
+              <span class="detail-value">{{ newOrderData.totalCapacity }} чел</span>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="orderName">Имя клиента:</label>
+            <input 
+              id="orderName"
+              v-model="newOrderData.customerName" 
+              type="text" 
+              placeholder="Введите имя клиента"
+              class="form-input"
+            />
+          </div>
+          
+          <div class="form-group">
+            <label for="orderPhone">Телефон:</label>
+            <input 
+              id="orderPhone"
+              v-model="newOrderData.customerPhone" 
+              type="tel" 
+              placeholder="+7 (999) 123-45-67"
+              class="form-input"
+            />
+          </div>
+          
+          <div class="form-group">
+            <label for="orderPeople">Количество человек:</label>
+            <input 
+              id="orderPeople"
+              v-model="newOrderData.numPeople" 
+              type="number" 
+              min="1"
+              :max="newOrderData.totalCapacity"
+              class="form-input"
+            />
+          </div>
+          
+          <div class="form-group">
+            <label for="orderStatus">Статус:</label>
+            <select id="orderStatus" v-model="newOrderData.status" class="form-select">
+              <option value="New">Новый</option>
+              <option value="Bill">Счет</option>
+              <option value="Closed">Закрыт</option>
+              <option value="Banquet">Банкет</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="closeNewOrderModal">Отменить</button>
+          <button class="btn btn-primary" @click="createNewOrder" :disabled="!canCreateOrder">Создать</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -146,6 +244,54 @@ const verticalScale = ref(0.5);   // Base scale for vertical (time slots) - most
 
 // Theme state
 const isDarkTheme = ref(true); // Default to dark theme
+
+// Drag state for creating new orders
+const isDragging = ref(false);
+const dragData = ref<{
+  table: Table | null;
+  startTimeSlot: string;
+  endTimeSlot: string;
+  startY: number;
+  currentY: number;
+  startX: number;
+  currentX: number;
+  selectedTables: Table[];
+  isHorizontalDrag: boolean;
+}>({
+  table: null,
+  startTimeSlot: '',
+  endTimeSlot: '',
+  startY: 0,
+  currentY: 0,
+  startX: 0,
+  currentX: 0,
+  selectedTables: [],
+  isHorizontalDrag: false
+});
+
+// Modal state for new order
+const showNewOrderModal = ref(false);
+const newOrderData = ref<{
+  startTime: string;
+  endTime: string;
+  duration: string;
+  selectedTables: Table[];
+  totalCapacity: number;
+  customerName: string;
+  customerPhone: string;
+  numPeople: number;
+  status: string;
+}>({
+  startTime: '',
+  endTime: '',
+  duration: '',
+  selectedTables: [],
+  totalCapacity: 0,
+  customerName: '',
+  customerPhone: '',
+  numPeople: 1,
+  status: 'New'
+});
 
 // Computed properties
 const restaurant = computed(() => reservationData.value?.restaurant);
@@ -306,6 +452,244 @@ const handleSearch = async () => {
 const handleItemClick = (item: any) => {
   console.log('Clicked item:', item);
   // Здесь можно добавить логику для открытия модального окна с деталями
+};
+
+// Drag-to-create methods
+const handleMouseDown = (event: MouseEvent, table: Table, timeSlot: string) => {
+  if (event.button !== 0) return; // Only left mouse button
+  
+  isDragging.value = true;
+  dragData.value = {
+    table,
+    startTimeSlot: timeSlot,
+    endTimeSlot: timeSlot,
+    startY: event.clientY,
+    currentY: event.clientY,
+    startX: event.clientX,
+    currentX: event.clientX,
+    selectedTables: [table],
+    isHorizontalDrag: false
+  };
+  
+  // Prevent text selection during drag
+  event.preventDefault();
+  
+  // Add global mouse event listeners
+  document.addEventListener('mousemove', handleGlobalMouseMove);
+  document.addEventListener('mouseup', handleGlobalMouseUp);
+};
+
+const handleMouseEnter = (event: MouseEvent, table: Table, timeSlot: string) => {
+  if (!isDragging.value || !dragData.value.table) return;
+  
+  // Update current position
+  dragData.value.currentY = event.clientY;
+  dragData.value.currentX = event.clientX;
+  
+  // Determine if it's a horizontal or vertical drag
+  const dragDistanceY = Math.abs(event.clientY - dragData.value.startY);
+  const dragDistanceX = Math.abs(event.clientX - dragData.value.startX);
+  
+  // If horizontal drag is detected, set isHorizontalDrag to true
+  if (dragDistanceX > dragDistanceY && dragDistanceX > 20) { // Add threshold for horizontal detection
+    dragData.value.isHorizontalDrag = true;
+  } else if (dragDistanceY > dragDistanceX && dragDistanceY > 20) { // Add threshold for vertical detection
+    dragData.value.isHorizontalDrag = false;
+  }
+  
+  // Update selected tables based on current cursor position
+  if (dragData.value.isHorizontalDrag) {
+    const startTableIndex = filteredTables.value.findIndex(t => t.id === dragData.value.table!.id);
+    const currentTableIndex = filteredTables.value.findIndex(t => t.id === table.id);
+    
+    if (startTableIndex !== -1 && currentTableIndex !== -1) {
+      const minTableIndex = Math.min(startTableIndex, currentTableIndex);
+      const maxTableIndex = Math.max(startTableIndex, currentTableIndex);
+      
+      // Only include tables that are actually under the cursor path
+      dragData.value.selectedTables = filteredTables.value.slice(minTableIndex, maxTableIndex + 1);
+    }
+  } else {
+    // For vertical drag, only select the starting table
+    if (dragData.value.table) {
+      dragData.value.selectedTables = [dragData.value.table];
+    }
+  }
+};
+
+const handleGlobalMouseMove = (event: MouseEvent) => {
+  if (!isDragging.value) return;
+  
+  dragData.value.currentY = event.clientY;
+  dragData.value.currentX = event.clientX;
+  
+  // Determine if it's a horizontal or vertical drag
+  const dragDistanceY = Math.abs(event.clientY - dragData.value.startY);
+  const dragDistanceX = Math.abs(event.clientX - dragData.value.startX);
+  
+  // If horizontal drag is detected, set isHorizontalDrag to true
+  if (dragDistanceX > dragDistanceY && dragDistanceX > 20) { // Add threshold for horizontal detection
+    dragData.value.isHorizontalDrag = true;
+  } else if (dragDistanceY > dragDistanceX && dragDistanceY > 20) { // Add threshold for vertical detection
+    dragData.value.isHorizontalDrag = false;
+  }
+  
+  // Always calculate time range based on vertical drag (time is vertical)
+  const timeSlotHeight = 50 * verticalScale.value; // Use CSS variable
+  const dragDistance = event.clientY - dragData.value.startY;
+  const timeSlotsDragged = Math.round(dragDistance / timeSlotHeight);
+  
+  const startIndex = timeSlots.value.indexOf(dragData.value.startTimeSlot);
+  if (startIndex !== -1) {
+    const endIndex = Math.max(0, Math.min(timeSlots.value.length - 1, startIndex + timeSlotsDragged));
+    dragData.value.endTimeSlot = timeSlots.value[endIndex];
+  }
+  
+  // Table selection is handled by handleMouseEnter based on cursor position
+  // No need to update selectedTables here
+};
+
+const handleGlobalMouseUp = () => {
+  if (!isDragging.value) return;
+  
+  // Calculate final time range
+  const startTime = dragData.value.startTimeSlot;
+  const endTime = dragData.value.endTimeSlot;
+  const hasTimeChange = startTime !== endTime;
+  const hasTableChange = dragData.value.selectedTables.length > 1;
+  
+  // Show modal if there are changes in time OR tables
+  if (hasTimeChange || hasTableChange) {
+    // Calculate duration
+    const startIndex = timeSlots.value.indexOf(startTime);
+    const endIndex = timeSlots.value.indexOf(endTime);
+    const durationMinutes = Math.abs(endIndex - startIndex + 1) * 30;
+    const durationHours = durationMinutes / 60;
+    
+    // Calculate total capacity
+    const totalCapacity = dragData.value.selectedTables.reduce((sum, table) => sum + table.capacity, 0);
+    
+    // Prepare modal data
+    newOrderData.value = {
+      startTime,
+      endTime,
+      duration: `${durationHours} ${durationHours === 1 ? 'час' : durationHours < 5 ? 'часа' : 'часов'}`,
+      selectedTables: dragData.value.selectedTables,
+      totalCapacity,
+      customerName: '',
+      customerPhone: '',
+      numPeople: Math.min(totalCapacity, 1),
+      status: 'New'
+    };
+    
+    // Show modal
+    showNewOrderModal.value = true;
+  }
+  
+  // Reset drag state
+  isDragging.value = false;
+  dragData.value = {
+    table: null,
+    startTimeSlot: '',
+    endTimeSlot: '',
+    startY: 0,
+    currentY: 0,
+    startX: 0,
+    currentX: 0,
+    selectedTables: [],
+    isHorizontalDrag: false
+  };
+  
+  // Remove global event listeners
+  document.removeEventListener('mousemove', handleGlobalMouseMove);
+  document.removeEventListener('mouseup', handleGlobalMouseUp);
+};
+
+const handleMouseUp = () => {
+  // This will be handled by the global mouse up handler
+};
+
+const isInDragRange = (timeSlot: string) => {
+  if (!isDragging.value || !dragData.value.table) return false;
+  
+  const startIndex = timeSlots.value.indexOf(dragData.value.startTimeSlot);
+  const endIndex = timeSlots.value.indexOf(dragData.value.endTimeSlot);
+  const currentIndex = timeSlots.value.indexOf(timeSlot);
+  
+  if (startIndex === -1 || endIndex === -1 || currentIndex === -1) return false;
+  
+  const minIndex = Math.min(startIndex, endIndex);
+  const maxIndex = Math.max(startIndex, endIndex);
+  
+  return currentIndex >= minIndex && currentIndex <= maxIndex;
+};
+
+const isTableSelected = (table: Table) => {
+  return dragData.value.selectedTables.some(selectedTable => selectedTable.id === table.id);
+};
+
+// Modal methods
+const closeNewOrderModal = () => {
+  showNewOrderModal.value = false;
+  // Reset form data
+  newOrderData.value = {
+    startTime: '',
+    endTime: '',
+    duration: '',
+    selectedTables: [],
+    totalCapacity: 0,
+    customerName: '',
+    customerPhone: '',
+    numPeople: 1,
+    status: 'New'
+  };
+};
+
+const formatDateForModal = (dateString: string) => {
+  const date = new Date(dateString);
+  const day = date.getDate();
+  const month = getMonthName(date.getMonth());
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}`;
+};
+
+const canCreateOrder = computed(() => {
+  return newOrderData.value.customerName.trim() !== '' && 
+         newOrderData.value.customerPhone.trim() !== '' &&
+         newOrderData.value.numPeople > 0 &&
+         newOrderData.value.numPeople <= newOrderData.value.totalCapacity;
+});
+
+const createNewOrder = async () => {
+  try {
+    // Create new order object
+    const newOrder = {
+      id: `new-${Date.now()}`,
+      status: newOrderData.value.status,
+      start_time: `${selectedDate.value}T${newOrderData.value.startTime}:00+10:00`,
+      end_time: `${selectedDate.value}T${newOrderData.value.endTime}:00+10:00`,
+      customer_name: newOrderData.value.customerName,
+      customer_phone: newOrderData.value.customerPhone,
+      num_people: newOrderData.value.numPeople,
+      tables: newOrderData.value.selectedTables.map(t => t.id)
+    };
+    
+    // Here you would typically send the order to your API
+    console.log('Creating new order:', newOrder);
+    
+    // For now, we'll just close the modal and refresh the data
+    closeNewOrderModal();
+    
+    // Refresh the current date data to show the new order
+    await fetchReservationData(selectedDate.value);
+    
+    // Show success message (you can implement a toast notification here)
+    alert('Заказ успешно создан!');
+    
+  } catch (error) {
+    console.error('Error creating order:', error);
+    alert('Ошибка при создании заказа');
+  }
 };
 
 const toggleTheme = () => {
@@ -665,6 +1049,35 @@ text-align: left;
   transition: color 0.3s ease;
 }
 
+/* Drag Instructions */
+.drag-instructions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 2rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.instruction-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.instruction-text {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.instruction-text strong {
+  color: var(--text-primary);
+}
+
 .date-buttons,
 .zone-buttons {
   display: flex;
@@ -941,4 +1354,201 @@ text-align: left;
   box-shadow: 0 1px 4px var(--scale-widget-shadow);
 }
 
+/* Drag states */
+.table-cell.dragging {
+  background-color: rgba(59, 130, 246, 0.1);
+  border: 2px dashed #3b82f6;
+}
+
+/* Horizontal drag indicator - override vertical drag when horizontal */
+.table-cell.dragging-horizontal {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+  border: 2px dashed #10b981 !important;
+}
+
+/* Table column highlight during horizontal drag */
+.table-column.dragging-horizontal {
+  background-color: rgba(16, 185, 129, 0.05);
+}
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+}
+
+.modal-content {
+  background-color: var(--bg-primary);
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.order-details {
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.detail-row:last-child {
+  margin-bottom: 0;
+}
+
+.detail-label {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.detail-value {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.form-input,
+.form-select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.form-input:focus,
+.form-select:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-input::placeholder {
+  color: var(--text-muted);
+}
+
+.modal-footer {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding: 1rem 1.5rem 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background-color: var(--accent-color);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+  background-color: var(--text-muted);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-secondary {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+  background-color: #505050;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .modal-content {
+    width: 95%;
+    margin: 1rem;
+  }
+  
+  .modal-footer {
+    flex-direction: column;
+  }
+  
+  .btn {
+    width: 100%;
+  }
+}
 </style>
