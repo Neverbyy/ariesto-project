@@ -28,7 +28,6 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { config } from '../config';
 
 interface Props {
   item: any;
@@ -42,6 +41,18 @@ const emit = defineEmits<{
 }>();
 
 const isHovered = ref(false);
+
+// Get scale from parent component via CSS custom properties
+const getScale = () => {
+  const parentElement = document.querySelector('.reservation-grid-container');
+  if (parentElement) {
+    const styles = getComputedStyle(parentElement);
+    const horizontalScale = parseFloat(styles.getPropertyValue('--horizontal-scale')) || 1;
+    const verticalScale = parseFloat(styles.getPropertyValue('--vertical-scale')) || 1;
+    return { horizontalScale, verticalScale };
+  }
+  return { horizontalScale: 1, verticalScale: 1 };
+};
 
 const itemClass = computed(() => {
   if (props.item.type === 'order') {
@@ -78,17 +89,19 @@ const itemStyle = computed(() => {
   const [slotHours, slotMinutes] = timeSlotTime.split(':').map(Number);
   const slotTotalMinutes = slotHours * 60 + slotMinutes;
   
+  const { horizontalScale, verticalScale } = getScale();
+  
   const topOffset = startTotalMinutes > slotTotalMinutes 
-    ? ((startTotalMinutes - slotTotalMinutes) / config.grid.timeSlotMinutes) * config.grid.timeSlotHeight
+    ? ((startTotalMinutes - slotTotalMinutes) / 30) * 50 * verticalScale
     : 0;
   
-  // Вычисляем высоту карточки на основе продолжительности заказа
+  // Вычисляем высоту карточки на основе продолжительности заказа с учетом масштаба
   const itemHeight = Math.max(
-    config.grid.timeSlotHeight, // Минимальная высота
-    (duration / config.grid.timeSlotMinutes) * config.grid.timeSlotHeight // Высота по продолжительности
+    50 * verticalScale, // Минимальная высота
+    (duration / 30) * 50 * verticalScale // Высота по продолжительности
   );
   
-  const overlapOffset = (props.item.overlapIndex || 0) * 10;
+  const overlapOffset = (props.item.overlapIndex || 0) * 10 * horizontalScale;
   const baseZ = 10 + startTotalMinutes + (props.item.overlapIndex || 0);
   const zIndex = isHovered.value ? 2000 : baseZ;
   

@@ -95,7 +95,7 @@ const hardcodedReservationsByTableNumber = {
     { id: '155-res-1', name: 'Татьяна', people: 8, phone: '+79995556667', status: 'Открыт', start: '18:00', end: '20:00' }
   ],
   '28': [
-    { id: '28-res-1', name: 'Владимир', people: 4, phone: '+79998887766', status: 'Живая очередь', start: '15:00', end: '17:00' }
+    { id: '28-res-1', name: 'Владимир', people: 4, phone: '+79998887766', status: 'Живая очередь', start: '12:00', end: '14:00' }
   ],
   '29': [
     { id: '29-res-1', name: 'Юлия', people: 5, phone: '+79991112233', status: 'Новая', start: '20:00', end: '22:00' }

@@ -61,7 +61,7 @@
       </div>
 
       <!-- Reservation Grid -->
-      <div class="reservation-grid-container">
+      <div class="reservation-grid-container" :style="gridStyles">
         <div class="grid-wrapper">
           <!-- Fixed table headers -->
           <div class="table-headers">
@@ -113,6 +113,15 @@
           </div>
         </div>
       </div>
+      
+      <!-- Fixed Scale Widget -->
+      <div class="fixed-scale-widget">
+        <div class="scale-label">Масштаб</div>
+        <div class="scale-buttons">
+          <button class="scale-btn scale-decrease" @click="decreaseScale">-</button>
+          <button class="scale-btn scale-increase" @click="increaseScale">+</button>
+        </div>
+      </div>
     </main>
   </div>
 </template>
@@ -128,6 +137,10 @@ const reservationData = ref<ReservationData | null>(null);
 const selectedDate = ref<string>('');
 const selectedZones = ref<ZoneType[]>(['1 этаж', '2 этаж']);
 const searchQuery = ref<string>('');
+
+// Scale state
+const horizontalScale = ref(0.5); // Base scale for horizontal (table columns) - most zoomed out
+const verticalScale = ref(0.5);   // Base scale for vertical (time slots) - most zoomed out
 
 // Computed properties
 const restaurant = computed(() => reservationData.value?.restaurant);
@@ -147,6 +160,14 @@ const zones: ZoneType[] = ['1 этаж', '2 этаж', 'Банкетный за�
 const filteredTables = computed(() => {
   return tables.value.filter(table => selectedZones.value.includes(table.zone));
 });
+
+// Computed styles for scaling
+const gridStyles = computed(() => ({
+  '--horizontal-scale': horizontalScale.value,
+  '--vertical-scale': verticalScale.value,
+  '--table-column-width': `${200 * horizontalScale.value}px`, // Base table width (16px steps)
+  '--time-slot-height': `${50 * verticalScale.value}px`,     // Base time slot height (4px steps)
+}));
 
 const timeSlots = computed(() => {
   if (!restaurant.value) return [];
@@ -233,6 +254,17 @@ const handleSearch = async () => {
 const handleItemClick = (item: any) => {
   console.log('Clicked item:', item);
   // Здесь можно добавить логику для открытия модального окна с деталями
+};
+
+// Scale functions
+const increaseScale = () => {
+  horizontalScale.value = Math.min(horizontalScale.value + 0.08, 3); // Max 300% (16px step)
+  verticalScale.value = Math.min(verticalScale.value + 0.08, 3);     // Max 300% (4px step)
+};
+
+const decreaseScale = () => {
+  horizontalScale.value = Math.max(horizontalScale.value - 0.08, 0.5); // Min 50% (16px step)
+  verticalScale.value = Math.max(verticalScale.value - 0.08, 0.5);     // Min 50% (4px step)
 };
 
 const formatDate = (dateString: string) => {
@@ -612,10 +644,41 @@ text-align: left;
 
 /* Reservation Grid */
 .reservation-grid-container {
-  overflow: hidden;
+  overflow: auto;
   border: 1px solid #404040;
   border-radius: 8px;
   width: 100%;
+  max-height: 80vh;
+  position: relative;
+  
+  /* Custom scrollbar styles */
+  scrollbar-width: thin;
+  scrollbar-color: #606060 #2a2a2a;
+}
+
+/* Webkit scrollbar styles (Chrome, Safari, Edge) */
+.reservation-grid-container::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.reservation-grid-container::-webkit-scrollbar-track {
+  background: #2a2a2a;
+  border-radius: 6px;
+}
+
+.reservation-grid-container::-webkit-scrollbar-thumb {
+  background: #606060;
+  border-radius: 6px;
+  border: 2px solid #2a2a2a;
+}
+
+.reservation-grid-container::-webkit-scrollbar-thumb:hover {
+  background: #707070;
+}
+
+.reservation-grid-container::-webkit-scrollbar-corner {
+  background: #2a2a2a;
 }
 
 .grid-wrapper {
@@ -630,7 +693,8 @@ text-align: left;
   border-bottom: 1px solid #404040;
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 2000;
+  min-width: max-content;
 }
 
 .time-header-cell {
@@ -646,13 +710,15 @@ text-align: left;
 
 .table-header-cell {
   flex: 1;
-  min-width: 0;
+  min-width: var(--table-column-width, 200px);
+  width: var(--table-column-width, 200px);
   padding: 1rem 0.5rem;
   border-right: 1px solid #404040;
   text-align: center;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  flex-shrink: 0;
 }
 
 .table-number {
@@ -689,11 +755,11 @@ text-align: left;
   background-color: #2a2a2a;
   position: sticky;
   left: 0;
-  z-index: 5;
+  z-index: 2000;
 }
 
 .time-cell {
-  height: 50px;
+  height: var(--time-slot-height, 50px);
   padding: 0.5rem;
   border-bottom: 1px solid #404040;
   border-right: 1px solid #404040;
@@ -710,22 +776,76 @@ text-align: left;
 .tables-columns {
   display: flex;
   flex: 1;
+  min-width: max-content;
 }
 
 .table-column {
   flex: 1;
-  min-width: 0;
+  min-width: var(--table-column-width, 200px);
+  width: var(--table-column-width, 200px);
+  flex-shrink: 0;
 }
 
 .table-cell {
-  height: 50px;
+  height: var(--time-slot-height, 50px);
   border-bottom: 1px solid #404040;
   border-right: 1px solid #404040;
   position: relative;
   padding: 2px;
   overflow: visible;
-  min-height: 50px;
+  min-height: var(--time-slot-height, 50px);
 }
 
+/* Fixed Scale Widget */
+.fixed-scale-widget {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #2a2a2a;
+  border: 1px solid #404040;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 1500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.scale-label {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.scale-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.scale-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 4px;
+  background-color: #404040;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.scale-btn:hover {
+  background-color: #505050;
+}
+
+.scale-btn:active {
+  background-color: #606060;
+}
 
 </style>
