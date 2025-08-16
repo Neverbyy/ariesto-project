@@ -24,45 +24,45 @@ const orderStatuses = ['New', 'Bill', 'Closed', 'Banquet'];
 // Hardcoded orders by table number (keeps overlaps like in the UI example)
 const hardcodedOrdersByTableNumber = {
   '29': [
-    { id: '29-1', status: 'New', start: '12:00', end: '19:00' },
-    { id: '29-2', status: 'Bill', start: '13:00', end: '14:00' },
-    { id: '29-3', status: 'Closed', start: '15:00', end: '17:00' }
+    { id: '29-1', status: 'New', start: '12:00', end: '19:00', customer_phone: '+79991234567', num_people: 4 },
+    { id: '29-2', status: 'Bill', start: '13:00', end: '14:00', customer_phone: '+79998889900', num_people: 2 },
+    { id: '29-3', status: 'Closed', start: '15:00', end: '17:00', customer_phone: '+79991112233', num_people: 3 }
   ],
   '5': [
-    { id: '5-1', status: 'New', start: '11:30', end: '12:30' },
-    { id: '5-2', status: 'Bill', start: '16:00', end: '18:00' }
+    { id: '5-1', status: 'New', start: '11:30', end: '12:30', customer_phone: '+79987654321', num_people: 2 },
+    { id: '5-2', status: 'Bill', start: '16:00', end: '18:00', customer_phone: '+79994445566', num_people: 5 }
   ],
   '6': [
-    { id: '6-1', status: 'Closed', start: '12:00', end: '14:00' }
+    { id: '6-1', status: 'Closed', start: '12:00', end: '14:00', customer_phone: '+79997778899', num_people: 6 }
   ],
   '20': [
-    { id: '20-1', status: 'New', start: '13:00', end: '15:00' }
+    { id: '20-1', status: 'New', start: '13:00', end: '15:00', customer_phone: '+79993334445', num_people: 4 }
   ],
   '21': [
-    { id: '21-1', status: 'Banquet', start: '18:00', end: '21:30' },
-    { id: '21-2', status: 'New', start: '22:00', end: '23:00' }
+    { id: '21-1', status: 'Banquet', start: '18:00', end: '21:30', customer_phone: '+79996667788', num_people: 3 },
+    { id: '21-2', status: 'New', start: '22:00', end: '23:00', customer_phone: '+79992223334', num_people: 7 }
   ],
   '22': [
-    { id: '22-1', status: 'Bill', start: '19:00', end: '21:00' }
+    { id: '22-1', status: 'Bill', start: '19:00', end: '21:00', customer_phone: '+79995556667', num_people: 8 }
   ],
   '23': [
-    { id: '23-1', status: 'Closed', start: '14:00', end: '16:00' }
+    { id: '23-1', status: 'Closed', start: '14:00', end: '16:00', customer_phone: '+79998887766', num_people: 4 }
   ],
   '24': [
-    { id: '24-1', status: 'New', start: '15:00', end: '17:00' }
+    { id: '24-1', status: 'New', start: '15:00', end: '17:00', customer_phone: '+79991112233', num_people: 5 }
   ],
   '155': [
-    { id: '155-1', status: 'Banquet', start: '17:00', end: '22:00' }
+    { id: '155-1', status: 'Banquet', start: '17:00', end: '22:00', customer_phone: '+79994443332', num_people: 6 }
   ],
   '28': [
-    { id: '28-1', status: 'New', start: '16:00', end: '20:00' },
-    { id: '28-2', status: 'Bill', start: '17:00', end: '18:30' }
+    { id: '28-1', status: 'New', start: '16:00', end: '20:00', customer_phone: '+79997776665', num_people: 10 },
+    { id: '28-2', status: 'Bill', start: '17:00', end: '18:30', customer_phone: '+79991234567', num_people: 4 }
   ],
   '30': [
-    { id: '30-1', status: 'Bill', start: '18:00', end: '20:00' }
+    { id: '30-1', status: 'Bill', start: '18:00', end: '20:00', customer_phone: '+79998889900', num_people: 2 }
   ],
   '191': [
-    { id: '191-1', status: 'Banquet', start: '19:00', end: '23:00' }
+    { id: '191-1', status: 'Banquet', start: '19:00', end: '23:00', customer_phone: '+79991112233', num_people: 3 }
   ]
 };
 
@@ -108,6 +108,67 @@ const hardcodedReservationsByTableNumber = {
   ]
 };
 
+// POST /api/orders - Create a new order
+app.post('/api/orders', (req, res) => {
+  try {
+    const { 
+      start_time, 
+      end_time, 
+      customer_name, 
+      customer_phone, 
+      num_people, 
+      status, 
+      tables 
+    } = req.body;
+    
+    // Validate required fields
+    if (!start_time || !end_time || !customer_name || !customer_phone || !num_people || !tables) {
+      return res.status(400).json({ 
+        error: 'Missing required fields: start_time, end_time, customer_name, customer_phone, num_people, tables' 
+      });
+    }
+    
+    // Generate a unique ID for the new order
+    const orderId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Create the new order object
+    const newOrder = {
+      id: orderId,
+      status: status || 'New',
+      start_time,
+      end_time,
+      customer_name,
+      customer_phone,
+      num_people: parseInt(num_people),
+      tables: Array.isArray(tables) ? tables : [tables]
+    };
+    
+    // Extract date from start_time for storage
+    const orderDate = start_time.split('T')[0];
+    
+    // Store the new order in memory (in a real app, this would go to a database)
+    if (!global.newOrders) {
+      global.newOrders = {};
+    }
+    if (!global.newOrders[orderDate]) {
+      global.newOrders[orderDate] = [];
+    }
+    global.newOrders[orderDate].push(newOrder);
+    
+    console.log('Created new order:', newOrder);
+    
+    res.status(201).json({
+      success: true,
+      order: newOrder,
+      message: 'Order created successfully'
+    });
+    
+  } catch (error) {
+    console.error('Error creating order:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 const generateMockTables = (date) => {
   // Base tables configuration
   const baseTables = [
@@ -132,8 +193,29 @@ const generateMockTables = (date) => {
       id: o.id,
       status: o.status,
       start_time: `${date}T${o.start}:00+10:00`,
-      end_time: `${date}T${o.end}:00+10:00`
+      end_time: `${date}T${o.end}:00+10:00`,
+      customer_phone: o.customer_phone,
+      num_people: o.num_people
     }));
+    
+    // Add new orders created via API for this table
+    if (global.newOrders && global.newOrders[date]) {
+      const newOrdersForTable = global.newOrders[date].filter(order => 
+        order.tables.includes(table.id)
+      );
+      
+      newOrdersForTable.forEach(order => {
+        orders.push({
+          id: order.id,
+          status: order.status,
+          start_time: order.start_time,
+          end_time: order.end_time,
+          customer_name: order.customer_name,
+          customer_phone: order.customer_phone,
+          num_people: order.num_people
+        });
+      });
+    }
     
     // Use hardcoded reservations for this table
     const reservations = (hardcodedReservationsByTableNumber[table.number] || []).map((r) => ({

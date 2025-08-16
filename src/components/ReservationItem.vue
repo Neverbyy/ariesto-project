@@ -11,15 +11,19 @@
         <div class="item-title">{{ itemTitle }}</div>
         <div class="status-badge">{{ orderStatusText }}</div>
         <div class="time-display">{{ orderTimeText }}</div>
+        <div class="hover-extra" v-if="orderPhoneSuffix || orderPeopleText">
+          <div class="phone-text" v-if="orderPhoneSuffix">📞 {{ orderPhoneSuffix }}</div>
+          <div class="people-text" v-if="orderPeopleText">{{ orderPeopleText }}</div>
+        </div>
       </template>
       
       <template v-else>
         <div class="item-title">{{ itemTitle }}</div>
         <div class="time-display">{{ reservationTimeText }}</div>
         <div class="status-badge">{{ reservationStatusText }}</div>
-        <div class="hover-extra" v-if="showExtraInfo">
-          <div class="phone-text">📞 {{ phoneSuffix }}</div>
-          <div class="people-text">{{ reservationPeopleText }}</div>
+        <div class="hover-extra" v-if="phoneSuffix || reservationPeopleText">
+          <div class="phone-text" v-if="phoneSuffix">📞 {{ phoneSuffix }}</div>
+          <div class="people-text" v-if="reservationPeopleText">{{ reservationPeopleText }}</div>
         </div>
       </template>
     </div>
@@ -166,7 +170,11 @@ const reservationStatusText = computed(() => props.item.type === 'reservation' ?
 const reservationPeopleText = computed(() => props.item.type === 'reservation' ? `${props.item.num_people} чел` : '');
 const phoneSuffix = computed(() => props.item.type === 'reservation' ? String(props.item.phone_number).slice(-4) : '');
 
-// Определяем, показывать ли дополнительную информацию (телефон и количество людей)
+// Для заказов
+const orderPhoneSuffix = computed(() => props.item.type === 'order' && props.item.customer_phone ? String(props.item.customer_phone).slice(-4) : '');
+const orderPeopleText = computed(() => props.item.type === 'order' && props.item.num_people ? `${props.item.num_people} чел` : '');
+
+// Определяем, показывать ли дополнительную информацию для бронирований (телефон и количество людей)
 const showExtraInfo = computed(() => {
   if (props.item.type !== 'reservation') return false;
   
@@ -185,6 +193,28 @@ const showExtraInfo = computed(() => {
   const duration = endTotalMinutes - startTotalMinutes;
   
   // Показываем дополнительную информацию только для бронирований с маленьким диапазоном (менее 2 часов)
+  return duration < 120; // 120 минут = 2 часа
+});
+
+// Определяем, показывать ли дополнительную информацию для заказов (телефон и количество людей)
+const showOrderExtraInfo = computed(() => {
+  if (props.item.type !== 'order') return false;
+  
+  // Получаем продолжительность заказа
+  const startTimeStr = props.item.start_time;
+  const endTimeStr = props.item.end_time;
+  
+  const startTime = extractTimeFromISO(startTimeStr);
+  const endTime = extractTimeFromISO(endTimeStr);
+  
+  const [startHours, startMinutes] = startTime.split(':').map(Number);
+  const [endHours, endMinutes] = endTime.split(':').map(Number);
+  
+  const startTotalMinutes = startHours * 60 + startMinutes;
+  const endTotalMinutes = endHours * 60 + endMinutes;
+  const duration = endTotalMinutes - startTotalMinutes;
+  
+  // Показываем дополнительную информацию только для заказов с маленьким диапазоном (менее 2 часов)
   return duration < 120; // 120 минут = 2 часа
 });
 

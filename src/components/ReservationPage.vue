@@ -62,13 +62,13 @@
         </div>
       </div>
 
-      <!-- Drag Instructions -->
-      <div class="drag-instructions">
-        <div class="instruction-icon">💡</div>
-        <div class="instruction-text">
-          <strong>Создание заказа:</strong> Зажмите левую кнопку мыши на ячейке и протяните вниз для выбора времени или вправо для выбора нескольких столов
-        </div>
-      </div>
+             <!-- Drag Instructions -->
+       <div class="drag-instructions">
+         <div class="instruction-icon">💡</div>
+                   <div class="instruction-text">
+            <strong>Создание заказа:</strong> Зажмите левую кнопку мыши на пустой ячейке и протяните вниз для выбора времени или вправо для выбора нескольких столов. <em>Будет создан один заказ для всех выбранных столов. Нельзя создавать заказы на занятых столах.</em>
+          </div>
+       </div>
 
       <!-- Reservation Grid -->
       <div class="reservation-grid-container" :style="gridStyles">
@@ -106,18 +106,19 @@
                 class="table-column"
                 :class="{ 'dragging-horizontal': isDragging && dragData.isHorizontalDrag && dragData.selectedTables.some(t => t.id === table.id) }"
               >
-                <div
-                  v-for="timeSlot in timeSlots"
-                  :key="timeSlot"
-                  class="table-cell"
-                  @mousedown="handleMouseDown($event, table, timeSlot)"
-                  @mouseenter="handleMouseEnter($event, table, timeSlot)"
-                  @mouseup="handleMouseUp"
-                  :class="{ 
-                    'dragging': isDragging && isInDragRange(timeSlot) && isTableSelected(table),
-                    'dragging-horizontal': isDragging && dragData.isHorizontalDrag && isInDragRange(timeSlot) && isTableSelected(table)
-                  }"
-                >
+                                 <div
+                   v-for="timeSlot in timeSlots"
+                   :key="timeSlot"
+                   class="table-cell"
+                   @mousedown="handleMouseDown($event, table, timeSlot)"
+                   @mouseenter="handleMouseEnter($event, table, timeSlot)"
+                   @mouseup="handleMouseUp"
+                   :class="{ 
+                     'dragging': isDragging && isInDragRange(timeSlot) && isTableSelected(table),
+                     'dragging-horizontal': isDragging && dragData.isHorizontalDrag && isInDragRange(timeSlot) && isTableSelected(table),
+                     'occupied': getItemsForTableAndTime(table, timeSlot).length > 0
+                   }"
+                 >
                   <ReservationItem
                     v-for="item in getItemsForTableAndTime(table, timeSlot)"
                     :key="`${table.id}-${timeSlot}-${item.id}-${item.type}`"
@@ -165,7 +166,11 @@
             </div>
             <div class="detail-row">
               <span class="detail-label">Столы:</span>
-              <span class="detail-value">{{ newOrderData.selectedTables.map(t => `#${t.number}`).join(' + ') }}</span>
+              <span class="detail-value">{{ newOrderData.selectedTables.map(t => `#${t.number}`).join(', ') }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Количество столов:</span>
+              <span class="detail-value">{{ newOrderData.selectedTables.length }} {{ newOrderData.selectedTables.length === 1 ? 'стол' : newOrderData.selectedTables.length < 5 ? 'стола' : 'столов' }}</span>
             </div>
             <div class="detail-row">
               <span class="detail-label">Общая вместимость:</span>
@@ -219,7 +224,9 @@
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" @click="closeNewOrderModal">Отменить</button>
-          <button class="btn btn-primary" @click="createNewOrder" :disabled="!canCreateOrder">Создать</button>
+          <button class="btn btn-primary" @click="createNewOrder" :disabled="!canCreateOrder">
+            Создать заказ
+          </button>
         </div>
       </div>
     </div>
@@ -458,6 +465,13 @@ const handleItemClick = (item: any) => {
 const handleMouseDown = (event: MouseEvent, table: Table, timeSlot: string) => {
   if (event.button !== 0) return; // Only left mouse button
   
+  // Check if there are existing items in this cell
+  const existingItems = getItemsForTableAndTime(table, timeSlot);
+  if (existingItems.length > 0) {
+    console.log('Cannot start drag on cell with existing items:', existingItems);
+    return; // Don't start drag if there are existing items
+  }
+  
   isDragging.value = true;
   dragData.value = {
     table,
@@ -481,6 +495,30 @@ const handleMouseDown = (event: MouseEvent, table: Table, timeSlot: string) => {
 
 const handleMouseEnter = (event: MouseEvent, table: Table, timeSlot: string) => {
   if (!isDragging.value || !dragData.value.table) return;
+  
+  // Check if there are existing items in this cell - if so, stop the drag
+  const existingItems = getItemsForTableAndTime(table, timeSlot);
+  if (existingItems.length > 0) {
+    console.log('Drag stopped due to existing items in cell:', existingItems);
+    // Reset drag state
+    isDragging.value = false;
+    dragData.value = {
+      table: null,
+      startTimeSlot: '',
+      endTimeSlot: '',
+      startY: 0,
+      currentY: 0,
+      startX: 0,
+      currentX: 0,
+      selectedTables: [],
+      isHorizontalDrag: false
+    };
+    
+    // Remove global event listeners
+    document.removeEventListener('mousemove', handleGlobalMouseMove);
+    document.removeEventListener('mouseup', handleGlobalMouseUp);
+    return;
+  }
   
   // Update current position
   dragData.value.currentY = event.clientY;
@@ -662,33 +700,36 @@ const canCreateOrder = computed(() => {
 
 const createNewOrder = async () => {
   try {
-    // Create new order object
-    const newOrder = {
-      id: `new-${Date.now()}`,
-      status: newOrderData.value.status,
+    // Create one order for all selected tables
+    const order = {
       start_time: `${selectedDate.value}T${newOrderData.value.startTime}:00+10:00`,
       end_time: `${selectedDate.value}T${newOrderData.value.endTime}:00+10:00`,
       customer_name: newOrderData.value.customerName,
       customer_phone: newOrderData.value.customerPhone,
       num_people: newOrderData.value.numPeople,
-      tables: newOrderData.value.selectedTables.map(t => t.id)
+      status: newOrderData.value.status,
+      tables: newOrderData.value.selectedTables.map(t => t.id) // All selected tables in one order
     };
     
-    // Here you would typically send the order to your API
-    console.log('Creating new order:', newOrder);
+    // Send order to server
+    const result = await reservationApi.createOrder(order);
+    console.log('Order created successfully:', result);
     
-    // For now, we'll just close the modal and refresh the data
+    // Close modal
     closeNewOrderModal();
     
     // Refresh the current date data to show the new order
     await fetchReservationData(selectedDate.value);
     
-    // Show success message (you can implement a toast notification here)
-    alert('Заказ успешно создан!');
+    // Show success message
+    const tableCount = newOrderData.value.selectedTables.length;
+    const tableText = tableCount === 1 ? 'стол' : tableCount < 5 ? 'стола' : 'столов';
+    alert(`Заказ успешно создан для ${tableCount} ${tableText}!`);
     
   } catch (error) {
     console.error('Error creating order:', error);
-    alert('Ошибка при создании заказа');
+    const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
+    alert(`Ошибка при создании заказа: ${errorMessage}`);
   }
 };
 
@@ -1369,6 +1410,16 @@ text-align: left;
 /* Table column highlight during horizontal drag */
 .table-column.dragging-horizontal {
   background-color: rgba(16, 185, 129, 0.05);
+}
+
+/* Occupied cells - cannot start drag here */
+.table-cell.occupied {
+  cursor: not-allowed;
+  background-color: rgba(239, 68, 68, 0.05);
+}
+
+.table-cell.occupied:hover {
+  background-color: rgba(239, 68, 68, 0.1);
 }
 
 /* Modal styles */
