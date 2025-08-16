@@ -15,7 +15,9 @@
             @keyup.enter="handleSearch"
           />
         </div>
-        <button class="theme-toggle">☀️</button>
+        <button class="theme-toggle" @click="toggleTheme">
+          {{ isDarkTheme ? '☀️' : '🌙' }}
+        </button>
         <button class="exit-btn">
           <span>Выйти</span>
           <span class="arrow">→</span>
@@ -142,6 +144,9 @@ const searchQuery = ref<string>('');
 const horizontalScale = ref(0.5); // Base scale for horizontal (table columns) - most zoomed out
 const verticalScale = ref(0.5);   // Base scale for vertical (time slots) - most zoomed out
 
+// Theme state
+const isDarkTheme = ref(true); // Default to dark theme
+
 // Computed properties
 const restaurant = computed(() => reservationData.value?.restaurant);
 const availableDays = computed(() => {
@@ -179,6 +184,27 @@ const loadSelectedZones = (): ZoneType[] => {
   }
   // Возвращаем значения по умолчанию, если ничего не сохранено или произошла ошибка
   return ['1 этаж', '2 этаж'];
+};
+
+// Функции для работы с темой
+const saveTheme = (isDark: boolean) => {
+  try {
+    localStorage.setItem('isDarkTheme', JSON.stringify(isDark));
+  } catch (error) {
+    console.error('Error saving theme to localStorage:', error);
+  }
+};
+
+const loadTheme = (): boolean => {
+  try {
+    const saved = localStorage.getItem('isDarkTheme');
+    if (saved !== null) {
+      return JSON.parse(saved);
+    }
+  } catch (error) {
+    console.error('Error loading theme from localStorage:', error);
+  }
+  return true; // Default to dark theme
 };
 
 const filteredTables = computed(() => {
@@ -280,6 +306,15 @@ const handleSearch = async () => {
 const handleItemClick = (item: any) => {
   console.log('Clicked item:', item);
   // Здесь можно добавить логику для открытия модального окна с деталями
+};
+
+const toggleTheme = () => {
+  isDarkTheme.value = !isDarkTheme.value;
+  saveTheme(isDarkTheme.value);
+  
+  // Синхронизируем тему с родительским компонентом
+  document.body.classList.toggle('light-theme', !isDarkTheme.value);
+  document.documentElement.classList.toggle('light-theme', !isDarkTheme.value);
 };
 
 // Scale functions
@@ -494,6 +529,13 @@ onMounted(() => {
   // Загружаем сохраненные зоны
   selectedZones.value = loadSelectedZones();
   
+  // Загружаем сохраненную тему
+  isDarkTheme.value = loadTheme();
+  
+  // Синхронизируем тему с родительским компонентом
+  document.body.classList.toggle('light-theme', !isDarkTheme.value);
+  document.documentElement.classList.toggle('light-theme', !isDarkTheme.value);
+  
   const today = new Date().toISOString().split('T')[0];
   selectedDate.value = today;
   console.log('Component mounted, fetching data for:', today);
@@ -503,12 +545,13 @@ onMounted(() => {
 
 <style scoped>
 .reservation-page {
-  background-color: #1a1a1a;
-  color: #ffffff;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   min-height: 100vh;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   width: 100%;
   max-width: 100%;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Header */
@@ -517,10 +560,11 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background-color: #2a2a2a;
-  border-bottom: 1px solid #404040;
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
   width: 100%;
   max-width: 100%;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .header-left .brand {
@@ -540,9 +584,10 @@ onMounted(() => {
 .search-bar {
   display: flex;
   align-items: center;
-  background-color: #404040;
+  background-color: var(--bg-tertiary);
   border-radius: 6px;
   padding: 0.5rem 1rem;
+  transition: background-color 0.3s ease;
 }
 
 .search-icon {
@@ -575,12 +620,13 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background-color: #404040;
+  background-color: var(--bg-tertiary);
   border: none;
-  color: #ffffff;
+  color: var(--text-primary);
   padding: 0.5rem 1rem;
   border-radius: 6px;
   cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
 .arrow {
@@ -615,7 +661,8 @@ text-align: left;
   display: block;
   text-align: left;
   margin-bottom: 0.5rem;
-  color: #e0e0e0;
+  color: var(--text-secondary);
+  transition: color 0.3s ease;
 }
 
 .date-buttons,
@@ -628,9 +675,9 @@ text-align: left;
 
 .date-btn,
 .zone-btn {
-  background-color: #404040;
+  background-color: var(--bg-tertiary);
   border: none;
-  color: #ffffff;
+  color: var(--text-primary);
   padding: 0.5rem 1rem;
   border-radius: 6px;
   cursor: pointer;
@@ -648,7 +695,8 @@ text-align: left;
 
 .date-btn.active,
 .zone-btn.active {
-  background-color: #0066cc;
+  background-color: var(--accent-color);
+  color: #ffffff;
 }
 
 .date-btn.active .date-label {
@@ -665,24 +713,26 @@ text-align: left;
 .date-label {
   font-size: 0.8rem;
   font-weight: 400;
-  color: #808080;
+  color: var(--text-muted);
   line-height: 1;
   text-transform: lowercase;
   text-align: left;
+  transition: color 0.3s ease;
 }
 
 /* Reservation Grid */
 .reservation-grid-container {
   overflow: auto;
-  border: 1px solid #404040;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   width: 100%;
   max-height: 80vh;
   position: relative;
+  transition: border-color 0.3s ease;
   
   /* Custom scrollbar styles */
   scrollbar-width: auto;
-  scrollbar-color: #606060 #2a2a2a;
+  scrollbar-color: #606060 var(--bg-secondary);
 }
 
 /* Webkit scrollbar styles (Chrome, Safari, Edge) */
@@ -718,12 +768,13 @@ text-align: left;
 
 .table-headers {
   display: flex;
-  background-color: #2a2a2a;
-  border-bottom: 1px solid #404040;
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
   position: sticky;
   top: 0;
-  z-index: 2000;
+  z-index: 2100;
   min-width: max-content;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .time-header-cell {
@@ -781,25 +832,27 @@ text-align: left;
 .time-column {
   width: 80px;
   min-width: 80px;
-  background-color: #2a2a2a;
+  background-color: var(--bg-secondary);
   position: sticky;
   left: 0;
-  z-index: 2000;
+  z-index: 2100;
+  transition: background-color 0.3s ease;
 }
 
 .time-cell {
   height: var(--time-slot-height, 50px);
   padding: 0.5rem;
-  border-bottom: 1px solid #404040;
-  border-right: 1px solid #404040;
+  border-bottom: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.9rem;
-  color: #e0e0e0;
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: border-color 0.3s ease, color 0.3s ease;
 }
 
 .tables-columns {
@@ -817,12 +870,13 @@ text-align: left;
 
 .table-cell {
   height: var(--time-slot-height, 50px);
-  border-bottom: 1px solid #404040;
-  border-right: 1px solid #404040;
+  border-bottom: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
   position: relative;
   padding: 2px;
   overflow: visible;
   min-height: var(--time-slot-height, 50px);
+  transition: border-color 0.3s ease;
 }
 
 /* Fixed Scale Widget */
@@ -830,8 +884,8 @@ text-align: left;
   position: fixed;
   bottom: 20px;
   right: 20px;
-  background-color: #2a2a2a;
-  border: 1px solid #404040;
+  background-color: var(--scale-widget-bg);
+  border: 1px solid var(--scale-widget-border);
   border-radius: 8px;
   padding: 12px;
   display: flex;
@@ -839,13 +893,15 @@ text-align: left;
   align-items: center;
   gap: 8px;
   z-index: 1500;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px var(--scale-widget-shadow);
+  transition: all 0.3s ease;
 }
 
 .scale-label {
-  color: #ffffff;
+  color: var(--scale-btn-text);
   font-size: 14px;
   font-weight: 500;
+  transition: color 0.3s ease;
 }
 
 .scale-buttons {
@@ -858,23 +914,31 @@ text-align: left;
   height: 32px;
   border: none;
   border-radius: 4px;
-  background-color: #404040;
-  color: #ffffff;
+  background-color: var(--scale-btn-bg);
+  color: var(--scale-btn-text);
   font-size: 18px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
 }
 
 .scale-btn:hover {
-  background-color: #505050;
+  background-color: var(--scale-btn-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px var(--scale-widget-shadow);
+}
+
+.light-theme .scale-btn:hover {
+  background-color: #d0d0d0;
 }
 
 .scale-btn:active {
-  background-color: #606060;
+  background-color: var(--scale-btn-active);
+  transform: translateY(0);
+  box-shadow: 0 1px 4px var(--scale-widget-shadow);
 }
 
 </style>

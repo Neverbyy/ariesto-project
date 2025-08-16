@@ -57,7 +57,7 @@ const updateScale = () => {
 };
 
 // Watch for scale changes by polling (since CSS custom properties don't trigger reactivity)
-let scaleInterval: number | null = null;
+let scaleInterval: ReturnType<typeof setInterval> | null = null;
 
 onMounted(() => {
   updateScale();
@@ -209,6 +209,11 @@ const handleClick = () => emit('click', props.item);
   backdrop-filter: blur(10px);
 }
 
+/* Theme support for reservation items */
+.reservation-item {
+  color: var(--text-primary);
+}
+
 .reservation-item.hovered {
   transform: scale(1.02);
   box-shadow: 0 6px 16px rgba(0, 0, 0);
@@ -241,20 +246,41 @@ const handleClick = () => emit('click', props.item);
   white-space: nowrap;
 }
 
+/* Light theme support */
+:global(.light-theme) .status-badge {
+  background-color: rgba(0,0,0,.1);
+  color: #333333;
+}
+
 .time-display { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; font-size: 0.9rem; margin: 0; }
 .hover-extra { display: flex; gap: 8px; align-items: center; }
 .people-text, .phone-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.75rem; opacity: 0.95; margin: 0; }
 
 
 
-/* Colors per spec */
-/* #7FD7CC29 — обычные заказы (Новый, Пречек, Закрытый) */
-.order-regular { background-color: #7FD7CC29; border-left: 3px solid #7FD7CC; }
-/* #B348F729 — Банкет */
-.order-banquet { background-color: #B348F729; border-left: 3px solid #B348F7; }
-/* #0097FD29 — Живая очередь */
-.reservation-live { background-color: #0097FD29; border-left: 3px solid #0097FD; }
-/* #FF704329 — Бронирования (прочие статусы) */
-.reservation-regular { background-color: #FF704329; border-left: 3px solid #FF7043; }
+/* Colors per spec using CSS variables */
+/* Обычные заказы (Новый, Пречек, Закрытый) */
+.order-regular { 
+  background-color: color-mix(in srgb, var(--card-order-regular) 15%, transparent); 
+  border-left: 3px solid var(--card-order-regular); 
+}
+
+/* Банкет */
+.order-banquet { 
+  background-color: color-mix(in srgb, var(--card-order-banquet) 15%, transparent); 
+  border-left: 3px solid var(--card-order-banquet); 
+}
+
+/* Живая очередь */
+.reservation-live { 
+  background-color: color-mix(in srgb, var(--card-reservation-live) 15%, transparent); 
+  border-left: 3px solid var(--card-reservation-live); 
+}
+
+/* Бронирования (прочие статусы) */
+.reservation-regular { 
+  background-color: color-mix(in srgb, var(--card-reservation-regular) 15%, transparent); 
+  border-left: 3px solid var(--card-reservation-regular); 
+}
 
 </style>
