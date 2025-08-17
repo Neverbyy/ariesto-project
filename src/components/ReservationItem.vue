@@ -167,11 +167,6 @@ const itemStyle = computed(() => {
   const baseZ = 10 + startTotalMinutes + (props.item.overlapIndex || 0);
   const zIndex = isHovered.value ? 2000 : baseZ;
   
-  // Debug logging for table 28
-  if (props.item.id && props.item.id.includes('28')) {
-    console.log(`ReservationItem ${props.item.id}: overlapIndex=${props.item.overlapIndex}, overlapOffset=${overlapOffset}px`);
-  }
-  
   return {
     height: `${itemHeight}px`,
     top: `${topOffset}px`,
@@ -317,7 +312,7 @@ const handleDelete = () => {
   padding: 0.5rem;
   font-size: 0.8rem;
   font-weight: 500;
-  overflow: visible;
+  overflow: hidden;
   cursor: pointer;
   transition: all 0.15s ease;
   color: #ffffff;

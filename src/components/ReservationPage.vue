@@ -66,9 +66,7 @@
        <div class="drag-instructions">
          <div class="instruction-icon">💡</div>
          <div class="instruction-text">
-           <strong>Создание заказа:</strong> Зажмите левую кнопку мыши на пустой ячейке и протяните вниз для выбора времени или вправо для выбора нескольких столов. <em>Будет создан один заказ для всех выбранных столов. Нельзя создавать заказы на занятых столах.</em>
-           <br><br>
-           <strong>Удаление элементов:</strong> Кликните на любой заказ, бронирование или запись из живой очереди для выделения, затем нажмите на появившуюся кнопку удаления ✖.
+           <strong>Создание заказа:</strong> Зажмите левую кнопку мыши на пустой ячейке и протяните вниз для выбора времени или вправо для выбора нескольких столов.
          </div>
        </div>
 
@@ -395,7 +393,6 @@ const timeSlots = computed(() => {
     currentTime.setMinutes(currentTime.getMinutes() + 30);
   }
   
-  console.log('Generated time slots:', slots);
   return slots;
 });
 
@@ -404,26 +401,9 @@ const fetchReservationData = async (date: string) => {
   try {
     console.log(`Fetching data for date: ${date}`);
     const data = await reservationApi.getReservations(date);
-    console.log('Data received from API:', data);
-    console.log('Tables count:', data.tables?.length || 0);
-    
-    // Debug: show all orders from all tables
-    data.tables?.forEach((table, index) => {
-      if (table.orders && table.orders.length > 0) {
-        console.log(`Table ${table.number} orders from API:`, table.orders.map(o => ({
-          id: o.id,
-          status: o.status,
-          start_time: o.start_time,
-          end_time: o.end_time
-        })));
-      }
-    });
-    
     reservationData.value = data;
   } catch (error) {
     console.error('Error fetching reservation data:', error);
-    console.log('API ERROR - NOT using mock data');
-    // Temporarily disable mock data fallback
     throw error;
   }
 };
@@ -515,10 +495,6 @@ const handleMouseDown = (event: MouseEvent, table: Table, timeSlot: string) => {
   
   // Check if there are existing items in this cell
   const existingItems = getItemsForTableAndTime(table, timeSlot);
-  if (existingItems.length > 0) {
-    console.log('Cannot start drag on cell with existing items:', existingItems);
-    return; // Don't start drag if there are existing items
-  }
   
   isDragging.value = true;
   dragData.value = {
@@ -651,8 +627,19 @@ const handleGlobalMouseUp = () => {
     // Calculate duration
     const startIndex = timeSlots.value.indexOf(startTime);
     const endIndex = timeSlots.value.indexOf(endTime);
-    const durationMinutes = Math.abs(endIndex - startIndex + 1) * 30;
+    // Правильный расчет: разница между индексами * 30 минут
+    const durationMinutes = (endIndex - startIndex) * 30;
     const durationHours = durationMinutes / 60;
+    
+    // Отладочная информация для проверки расчета
+    console.log('Duration calculation:', {
+      startTime,
+      endTime,
+      startIndex,
+      endIndex,
+      durationMinutes,
+      durationHours
+    });
     
     // Calculate total capacity
     const totalCapacity = dragData.value.selectedTables.reduce((sum, table) => sum + table.capacity, 0);
@@ -851,24 +838,7 @@ const extractTimeFromISO = (isoString: string): string => {
 
 // Debug function to log table data only once
 const logTableData = (table: Table) => {
-  if (table.orders.length > 0) {
-    console.log(`Table ${table.number} orders:`, table.orders.map(o => ({
-      id: o.id,
-      status: o.status,
-      start: extractTimeFromISO(o.start_time),
-      end: extractTimeFromISO(o.end_time)
-    })));
-  }
   
-  if (table.reservations.length > 0) {
-    console.log(`Table ${table.number} reservations:`, table.reservations.map(r => ({
-      id: r.id,
-      name: r.name_for_reservation,
-      status: r.status,
-      start: extractTimeFromISO(r.seating_time),
-      end: extractTimeFromISO(r.end_time)
-    })));
-  }
 };
 
 // Helper function to check if two time ranges overlap
@@ -884,11 +854,6 @@ const doTimeRangesOverlap = (start1: string, end1: string, start2: string, end2:
 const getItemsForTableAndTime = (table: Table, timeSlot: string) => {
   const items: Array<any> = [];
   const seenIds = new Set();
-  
-  // Log table data only once per table (when timeSlot is the first one)
-  if (timeSlot === timeSlots.value[0]) {
-    logTableData(table);
-  }
   
   // Collect all items (orders and reservations) for this table
   const allItems: Array<any> = [];
@@ -958,13 +923,6 @@ const getItemsForTableAndTime = (table: Table, timeSlot: string) => {
       overlapIndex = allOverlapping.findIndex(overlappingItem => 
         overlappingItem.id === item.id && overlappingItem.type === item.type
       );
-      
-      // Debug logging for table 28
-      if (table.number === '28') {
-        console.log(`Item ${item.id} (${item.startTime}-${item.endTime}) has overlapIndex: ${overlapIndex}`);
-        console.log('Overlapping items (any type):', overlappingItems.map(o => `${o.id} (${o.startTime}-${o.endTime})`));
-        console.log('Sorted overlapping group:', allOverlapping.map(o => `${o.id} (${o.startTime}-${o.endTime})`));
-      }
     }
     
     return {
@@ -981,10 +939,15 @@ const getItemsForTableAndTime = (table: Table, timeSlot: string) => {
       seenIds.add(itemKey);
       
       // Check if this item should be shown in this time slot
-      // Для заказов показываем в слоте начала, для бронирований - в слоте начала
-      const shouldShow = item.type === 'order' 
-        ? item.startTime === timeSlot // Заказы показываем в слоте начала
-        : item.startTime === timeSlot; // Бронирования показываем в слоте начала
+      let shouldShow = false;
+      
+      if (item.type === 'order') {
+        // Для заказов показываем только в слоте начала, но с высотой, покрывающей все слоты
+        shouldShow = item.startTime === timeSlot;
+      } else {
+        // Для бронирований показываем только в слоте начала
+        shouldShow = item.startTime === timeSlot;
+      }
       
       if (shouldShow) {
         items.push(item);
@@ -1011,7 +974,7 @@ onMounted(() => {
   
   const today = new Date().toISOString().split('T')[0];
   selectedDate.value = today;
-  console.log('Component mounted, fetching data for:', today);
+  
   fetchReservationData(today);
 });
 </script>
