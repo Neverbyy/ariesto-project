@@ -733,7 +733,7 @@ const createNewOrder = async () => {
     };
     
           // Отправляем заказ на сервер
-    const result = await reservationApi.createOrder(order);
+    await reservationApi.createOrder(order);
     
           // Закрываем модальное окно
     closeNewOrderModal();
