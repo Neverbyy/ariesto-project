@@ -474,8 +474,6 @@ app.get('/api/available-days', (req, res) => {
 // Запускаем сервер
 const server = app.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT}`);
-  console.log(`📅 API available at http://localhost:${PORT}/api`);
-  console.log(`💾 Data will be saved to: ${DATA_DIR}`);
 });
 
 // Graceful shutdown - сохраняем данные перед выходом
