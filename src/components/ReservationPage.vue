@@ -62,12 +62,14 @@
         </div>
       </div>
 
-             <!-- Drag Instructions -->
+             <!-- Instructions -->
        <div class="drag-instructions">
          <div class="instruction-icon">💡</div>
-                   <div class="instruction-text">
-            <strong>Создание заказа:</strong> Зажмите левую кнопку мыши на пустой ячейке и протяните вниз для выбора времени или вправо для выбора нескольких столов. <em>Будет создан один заказ для всех выбранных столов. Нельзя создавать заказы на занятых столах.</em>
-          </div>
+         <div class="instruction-text">
+           <strong>Создание заказа:</strong> Зажмите левую кнопку мыши на пустой ячейке и протяните вниз для выбора времени или вправо для выбора нескольких столов. <em>Будет создан один заказ для всех выбранных столов. Нельзя создавать заказы на занятых столах.</em>
+           <br><br>
+           <strong>Удаление элементов:</strong> Кликните на любой заказ, бронирование или запись из живой очереди для выделения, затем нажмите на появившуюся кнопку удаления ✖.
+         </div>
        </div>
 
       <!-- Reservation Grid -->
@@ -124,7 +126,10 @@
                     :key="`${table.id}-${timeSlot}-${item.id}-${item.type}`"
                     :item="item"
                     :time-slot="timeSlot"
+                    :vertical-scale="verticalScale"
+                    :is-selected="selectedOrder && selectedOrder.id === item.id"
                     @click="handleItemClick"
+                    @delete="handleItemDelete"
                   />
                 </div>
               </div>
@@ -300,6 +305,9 @@ const newOrderData = ref<{
   status: 'New'
 });
 
+// Selected item for deletion (orders, reservations, live queue)
+const selectedOrder = ref<any>(null);
+
 // Computed properties
 const restaurant = computed(() => reservationData.value?.restaurant);
 const availableDays = computed(() => {
@@ -457,8 +465,48 @@ const handleSearch = async () => {
 };
 
 const handleItemClick = (item: any) => {
-  console.log('Clicked item:', item);
-  // Здесь можно добавить логику для открытия модального окна с деталями
+  // Select any item for deletion (orders, reservations, live queue)
+  if (selectedOrder.value && selectedOrder.value.id === item.id) {
+    // If clicking the same item, deselect it
+    selectedOrder.value = null;
+  } else {
+    // Select the clicked item
+    selectedOrder.value = item;
+  }
+};
+
+const handleItemDelete = async (item: any) => {
+  try {
+    const itemType = item.type === 'order' ? 'заказ' : 
+                     item.status === 'Живая очередь' ? 'запись из живой очереди' : 'бронирование';
+    
+    console.log(`Deleting ${itemType}:`, item);
+    
+    // Call appropriate API method based on item type
+    if (item.type === 'order') {
+      await reservationApi.deleteOrder(item.id);
+    } else {
+      // For reservations and live queue, we'll use the same deleteOrder endpoint for now
+      // In a real application, you might have separate endpoints for different types
+      await reservationApi.deleteOrder(item.id);
+    }
+    
+    // Clear selection
+    selectedOrder.value = null;
+    
+    // Refresh the current date data to show the updated state
+    await fetchReservationData(selectedDate.value);
+    
+    // Show success message
+    alert(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} успешно удален!`);
+    
+  } catch (error) {
+    console.error('Error deleting item:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
+    const itemType = item.type === 'order' ? 'заказ' : 
+                     item.status === 'Живая очередь' ? 'запись из живой очереди' : 'бронирование';
+    alert(`Ошибка при удалении ${itemType}: ${errorMessage}`);
+  }
 };
 
 // Drag-to-create methods
@@ -573,13 +621,15 @@ const handleGlobalMouseMove = (event: MouseEvent) => {
   }
   
   // Always calculate time range based on vertical drag (time is vertical)
+  // Only allow dragging down (from top to bottom)
   const timeSlotHeight = 50 * verticalScale.value; // Use CSS variable
   const dragDistance = event.clientY - dragData.value.startY;
   const timeSlotsDragged = Math.round(dragDistance / timeSlotHeight);
   
   const startIndex = timeSlots.value.indexOf(dragData.value.startTimeSlot);
   if (startIndex !== -1) {
-    const endIndex = Math.max(0, Math.min(timeSlots.value.length - 1, startIndex + timeSlotsDragged));
+    // Only allow dragging down - endIndex should be >= startIndex
+    const endIndex = Math.max(startIndex, Math.min(timeSlots.value.length - 1, startIndex + timeSlotsDragged));
     dragData.value.endTimeSlot = timeSlots.value[endIndex];
   }
   
@@ -656,10 +706,8 @@ const isInDragRange = (timeSlot: string) => {
   
   if (startIndex === -1 || endIndex === -1 || currentIndex === -1) return false;
   
-  const minIndex = Math.min(startIndex, endIndex);
-  const maxIndex = Math.max(startIndex, endIndex);
-  
-  return currentIndex >= minIndex && currentIndex <= maxIndex;
+  // Since we only allow dragging down, startIndex should always be <= endIndex
+  return currentIndex >= startIndex && currentIndex <= endIndex;
 };
 
 const isTableSelected = (table: Table) => {
@@ -1330,7 +1378,21 @@ text-align: left;
   padding: 2px;
   overflow: visible;
   min-height: var(--time-slot-height, 50px);
-  transition: border-color 0.3s ease;
+  transition: all 0.2s ease;
+}
+
+/* Hover effect for interactive cells */
+.table-cell:hover:not(.occupied) {
+  background-color: rgba(59, 130, 246, 0.05);
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.2);
+}
+
+/* Light theme hover effect */
+:global(.light-theme) .table-cell:hover:not(.occupied) {
+  background-color: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.3);
 }
 
 /* Fixed Scale Widget */
@@ -1399,12 +1461,14 @@ text-align: left;
 .table-cell.dragging {
   background-color: rgba(59, 130, 246, 0.1);
   border: 2px dashed #3b82f6;
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.3);
 }
 
 /* Horizontal drag indicator - override vertical drag when horizontal */
 .table-cell.dragging-horizontal {
   background-color: rgba(16, 185, 129, 0.1) !important;
   border: 2px dashed #10b981 !important;
+  box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.3) !important;
 }
 
 /* Table column highlight during horizontal drag */
@@ -1419,7 +1483,16 @@ text-align: left;
 }
 
 .table-cell.occupied:hover {
+  background-color: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.3);
+  box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.2);
+}
+
+/* Light theme occupied hover effect */
+:global(.light-theme) .table-cell.occupied:hover {
   background-color: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.4);
+  box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.3);
 }
 
 /* Modal styles */

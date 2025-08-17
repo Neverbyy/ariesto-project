@@ -1,7 +1,9 @@
 <template>
   <div
-    :class="['reservation-item', itemClass, { hovered: isHovered }]"
+    :class="['reservation-item', itemClass, { hovered: isHovered, selected: isSelected }]"
     :style="itemStyle"
+    :data-scale="verticalScale"
+    :data-duration="getDurationClass()"
     @click="handleClick"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
@@ -11,9 +13,9 @@
         <div class="item-title">{{ itemTitle }}</div>
         <div class="status-badge">{{ orderStatusText }}</div>
         <div class="time-display">{{ orderTimeText }}</div>
-        <div class="hover-extra" v-if="orderPhoneSuffix || orderPeopleText">
-          <div class="phone-text" v-if="orderPhoneSuffix">📞 {{ orderPhoneSuffix }}</div>
-          <div class="people-text" v-if="orderPeopleText">{{ orderPeopleText }}</div>
+        <div class="hover-extra compact" v-if="shouldShowExtraInfo">
+          <div class="phone-text" v-if="orderPhoneSuffix && shouldShowPhone">📞 {{ orderPhoneSuffix }}</div>
+          <div class="people-text" v-if="orderPeopleText && shouldShowPeople">{{ orderPeopleText }}</div>
         </div>
       </template>
       
@@ -21,11 +23,21 @@
         <div class="item-title">{{ itemTitle }}</div>
         <div class="time-display">{{ reservationTimeText }}</div>
         <div class="status-badge">{{ reservationStatusText }}</div>
-        <div class="hover-extra" v-if="phoneSuffix || reservationPeopleText">
+        <div class="hover-extra compact" v-if="phoneSuffix || reservationPeopleText">
           <div class="phone-text" v-if="phoneSuffix">📞 {{ phoneSuffix }}</div>
           <div class="people-text" v-if="reservationPeopleText">{{ reservationPeopleText }}</div>
         </div>
       </template>
+    </div>
+    
+    <!-- Delete button for selected items -->
+    <div 
+      v-if="isSelected" 
+      class="delete-button"
+      @click.stop="handleDelete"
+      :title="getDeleteButtonTitle()"
+    >
+      ✖
     </div>
   </div>
 </template>
@@ -36,12 +48,15 @@ import { computed, ref, onMounted, onUnmounted } from 'vue';
 interface Props {
   item: any;
   timeSlot: string;
+  verticalScale: number;
+  isSelected?: boolean;
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
   click: [item: any];
+  delete: [item: any];
 }>();
 
 const isHovered = ref(false);
@@ -117,8 +132,34 @@ const itemStyle = computed(() => {
     : 0;
   
   // Вычисляем высоту карточки на основе продолжительности заказа с учетом масштаба
+  // Увеличиваем минимальную высоту для заказов с дополнительной информацией
+  let minHeight = 50 * verticalScale;
+  
+  // Для заказов с дополнительной информацией (телефон, количество людей) увеличиваем минимальную высоту
+  if (props.item.type === 'order') {
+    const hasExtraInfo = props.item.customer_phone || props.item.num_people;
+    if (hasExtraInfo) {
+      minHeight = Math.max(minHeight, 70 * verticalScale); // Минимум 70px для заказов с доп. информацией
+    }
+    
+    // Для заказов с короткой длительностью (менее 1 часа) устанавливаем минимальную высоту
+    if (duration < 60) {
+      minHeight = Math.max(minHeight, 90 * verticalScale); // Минимум 90px для коротких заказов
+    }
+    
+    // Для очень коротких заказов (менее 30 минут) дополнительно увеличиваем минимальную высоту
+    if (duration < 30) {
+      minHeight = Math.max(minHeight, 100 * verticalScale); // Минимум 100px для очень коротких заказов
+    }
+    
+    // Для заказов с очень коротким временем (менее 15 минут) устанавливаем минимальную высоту для основной информации
+    if (duration < 15) {
+      minHeight = Math.max(minHeight, 80 * verticalScale); // Минимум 80px для отображения основной информации
+    }
+  }
+  
   const itemHeight = Math.max(
-    50 * verticalScale, // Минимальная высота
+    minHeight, // Минимальная высота (адаптивная)
     (duration / 30) * 50 * verticalScale // Высота по продолжительности
   );
   
@@ -174,7 +215,97 @@ const phoneSuffix = computed(() => props.item.type === 'reservation' ? String(pr
 const orderPhoneSuffix = computed(() => props.item.type === 'order' && props.item.customer_phone ? String(props.item.customer_phone).slice(-4) : '');
 const orderPeopleText = computed(() => props.item.type === 'order' && props.item.num_people ? `${props.item.num_people} чел` : '');
 
+// Определяем, что показывать в зависимости от высоты заказа и масштаба
+const shouldShowExtraInfo = computed(() => {
+  if (props.item.type !== 'order') return false;
+  
+  // При максимальном отдалении масштаба (verticalScale = 0.5), скрываем всю дополнительную информацию
+  if (props.verticalScale <= 0.5) {
+    return false;
+  }
+  
+  // Получаем текущую высоту элемента
+  const itemHeight = itemStyle.value.height;
+  const heightValue = parseInt(String(itemHeight));
+  
+  // Если высота меньше 60px, показываем только основную информацию
+  return heightValue >= 60;
+});
+
+const shouldShowPhone = computed(() => {
+  if (props.item.type !== 'order') return false;
+  
+  // При максимальном отдалении масштаба (verticalScale = 0.5), скрываем телефон
+  if (props.verticalScale <= 0.5) {
+    return false;
+  }
+  
+  const itemHeight = itemStyle.value.height;
+  const heightValue = parseInt(String(itemHeight));
+  
+  // Телефон показываем только если высота позволяет
+  return heightValue >= 70;
+});
+
+const shouldShowPeople = computed(() => {
+  if (props.item.type !== 'order') return false;
+  
+  // При максимальном отдалении масштаба (verticalScale = 0.5), скрываем количество людей
+  if (props.verticalScale <= 0.5) {
+    return false;
+  }
+  
+  const itemHeight = itemStyle.value.height;
+  const heightValue = parseInt(String(itemHeight));
+  
+  // Количество людей показываем только если высота позволяет
+  return heightValue >= 65;
+});
+
 const handleClick = () => emit('click', props.item);
+
+const getDurationClass = () => {
+  if (props.item.type !== 'order') return '';
+  
+  const startTimeStr = props.item.start_time;
+  const endTimeStr = props.item.end_time;
+  const startTime = extractTimeFromISO(startTimeStr);
+  const endTime = extractTimeFromISO(endTimeStr);
+  
+  const [startHours, startMinutes] = startTime.split(':').map(Number);
+  const [endHours, endMinutes] = endTime.split(':').map(Number);
+  
+  const startTotalMinutes = startHours * 60 + startMinutes;
+  const endTotalMinutes = endHours * 60 + endMinutes;
+  const duration = endTotalMinutes - startTotalMinutes;
+  
+  if (duration < 60) return 'short';
+  if (duration < 120) return 'medium';
+  return 'long';
+};
+
+const getDeleteButtonTitle = () => {
+  switch (props.item.type) {
+    case 'order':
+      return 'Удалить заказ';
+    case 'reservation':
+      if (props.item.status === 'Живая очередь') {
+        return 'Удалить из живой очереди';
+      }
+      return 'Удалить бронирование';
+    default:
+      return 'Удалить';
+  }
+};
+
+const handleDelete = () => {
+  const itemType = props.item.type === 'order' ? 'заказ' : 
+                   props.item.status === 'Живая очередь' ? 'запись из живой очереди' : 'бронирование';
+  
+  if (confirm(`Вы уверены, что хотите удалить этот ${itemType}?`)) {
+    emit('delete', props.item);
+  }
+};
 </script>
 
 <style scoped>
@@ -186,7 +317,7 @@ const handleClick = () => emit('click', props.item);
   padding: 0.5rem;
   font-size: 0.8rem;
   font-weight: 500;
-  overflow: hidden;
+  overflow: visible;
   cursor: pointer;
   transition: all 0.15s ease;
   color: #ffffff;
@@ -205,12 +336,47 @@ const handleClick = () => emit('click', props.item);
   box-shadow: 0 6px 16px rgba(0, 0, 0);
 }
 
+.reservation-item.selected {
+  border: 2px solid #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+}
+
+.delete-button {
+  position: absolute;
+  right: -35px;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: #ef4444;
+  color: white;
+  border: 2px solid #dc2626;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  z-index: 2000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.delete-button:hover {
+  background-color: #dc2626;
+  border-color: #b91c1c;
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
 .item-content {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.35rem;
   align-items: flex-start;
   text-align: left;
+  justify-content: flex-start;
 }
 
 .item-title {
@@ -238,9 +404,123 @@ const handleClick = () => emit('click', props.item);
   color: #333333;
 }
 
-.time-display { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; font-size: 0.9rem; margin: 0; }
-.hover-extra { display: flex; gap: 8px; align-items: center; }
-.people-text, .phone-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.75rem; opacity: 0.95; margin: 0; }
+.time-display { 
+  white-space: nowrap; 
+  overflow: hidden; 
+  text-overflow: ellipsis; 
+  font-weight: 600; 
+  font-size: 0.9rem; 
+  margin: 0; 
+}
+
+.hover-extra { 
+  display: flex; 
+  gap: 8px; 
+  align-items: center; 
+  margin-top: 2px;
+}
+
+.hover-extra.compact {
+  gap: 4px;
+  margin-top: 1px;
+}
+
+.people-text, .phone-text { 
+  white-space: nowrap; 
+  overflow: hidden; 
+  text-overflow: ellipsis; 
+  font-size: 0.75rem; 
+  opacity: 0.95; 
+  margin: 0; 
+}
+
+.hover-extra.compact .people-text,
+.hover-extra.compact .phone-text {
+  font-size: 0.7rem;
+}
+
+/* Специальные стили для коротких заказов */
+.reservation-item.order-regular,
+.reservation-item.order-banquet {
+  min-height: 50px;
+}
+
+/* Уменьшаем отступы для коротких заказов */
+.reservation-item .item-title {
+  font-size: 0.85rem;
+  line-height: 1.1;
+}
+
+.reservation-item .status-badge {
+  font-size: 0.65rem;
+  padding: 0.05rem 0.3rem;
+}
+
+.reservation-item .time-display {
+  font-size: 0.8rem;
+  line-height: 1.1;
+}
+
+/* Специальные стили для очень коротких заказов */
+.reservation-item[data-duration="short"] .item-content {
+  justify-content: space-between;
+  padding: 2px 0;
+}
+
+.reservation-item[data-duration="short"] .item-title {
+  font-size: 0.8rem;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+.reservation-item[data-duration="short"] .status-badge {
+  font-size: 0.6rem;
+  padding: 0.03rem 0.25rem;
+  margin: 1px 0;
+}
+
+.reservation-item[data-duration="short"] .time-display {
+  font-size: 0.75rem;
+  line-height: 1;
+  margin-bottom: 1px;
+}
+
+.reservation-item[data-scale="0.5"] .item-title {
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.reservation-item[data-scale="0.5"] .status-badge {
+  font-size: 0.6rem;
+  padding: 0.03rem 0.25rem;
+}
+
+.reservation-item[data-scale="0.5"] .time-display {
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+/* Комбинированные стили для максимального отдаления + коротких заказов */
+.reservation-item[data-scale="0.5"][data-duration="short"] .item-content {
+  justify-content: space-between;
+  padding: 1px 0;
+}
+
+.reservation-item[data-scale="0.5"][data-duration="short"] .item-title {
+  font-size: 0.75rem;
+  margin-top: 0;
+}
+
+.reservation-item[data-scale="0.5"][data-duration="short"] .status-badge {
+  font-size: 0.55rem;
+  padding: 0.02rem 0.2rem;
+  margin: 0;
+}
+
+.reservation-item[data-scale="0.5"][data-duration="short"] .time-display {
+  font-size: 0.7rem;
+  margin-bottom: 0;
+}
 
 
 

@@ -63,6 +63,24 @@ export class ReservationApiService {
     
     return await response.json();
   }
+
+  async deleteOrder(orderId: string): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/api/orders/${orderId}`, {
+      method: 'DELETE',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+    
+    return await response.json();
+  }
 }
 
 export const reservationApi = new ReservationApiService();
