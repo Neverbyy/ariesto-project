@@ -125,7 +125,7 @@
                     :item="item"
                     :time-slot="timeSlot"
                     :vertical-scale="verticalScale"
-                    :is-selected="selectedOrder && selectedOrder.id === item.id"
+                    :is-selected="!!(selectedOrder && selectedOrder.id === item.id)"
                     @click="handleItemClick"
                     @delete="handleItemDelete"
                   />
@@ -240,7 +240,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import type { ReservationData, Table, ZoneType } from '../types/reservation';
+import type { ReservationData, Table, ZoneType, TableItem } from '../types/reservation';
 import { reservationApi } from '../services/api';
 import ReservationItem from './ReservationItem.vue';
 
@@ -306,7 +306,7 @@ const newOrderData = ref<{
 });
 
 // Selected item for deletion (orders, reservations, live queue)
-const selectedOrder = ref<any>(null);
+const selectedOrder = ref<TableItem | null>(null);
 
 // Computed properties
 const restaurant = computed(() => reservationData.value?.restaurant);
@@ -843,8 +843,8 @@ const getItemsForTableAndTime = (table: Table, timeSlot: string) => {
   
   // Add orders
   table.orders.forEach(order => {
-    const startTime = extractTimeFromISO(order.start_time);
-    const endTime = extractTimeFromISO(order.end_time);
+    const startTime = extractTimeFromISO(order.start_time || '');
+    const endTime = extractTimeFromISO(order.end_time || '');
     
     allItems.push({
       ...order,
@@ -856,8 +856,8 @@ const getItemsForTableAndTime = (table: Table, timeSlot: string) => {
   
   // Add reservations
   table.reservations.forEach(reservation => {
-    const startTime = extractTimeFromISO(reservation.seating_time);
-    const endTime = extractTimeFromISO(reservation.end_time);
+    const startTime = extractTimeFromISO(reservation.seating_time || '');
+    const endTime = extractTimeFromISO(reservation.end_time || '');
     
     allItems.push({
       ...reservation,
@@ -1354,7 +1354,7 @@ text-align: left;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  z-index: 1500;
+  z-index: 3000;
   box-shadow: 0 4px 12px var(--scale-widget-shadow);
   transition: all 0.3s ease;
 }

@@ -1,4 +1,4 @@
-import type { ReservationData } from '../types/reservation';
+import type { ReservationData, TableItem } from '../types/reservation';
 import { config } from '../config';
 
 export class ReservationApiService {
@@ -44,7 +44,7 @@ export class ReservationApiService {
     num_people: number;
     status: string;
     tables: string[];
-  }): Promise<any> {
+  }): Promise<{ success: boolean; orders: TableItem[]; message: string }> {
     const response = await fetch(`${this.baseUrl}/api/orders`, {
       method: 'POST',
       headers: {
@@ -64,7 +64,7 @@ export class ReservationApiService {
     return await response.json();
   }
 
-  async deleteOrder(orderId: string): Promise<any> {
+  async deleteOrder(orderId: string): Promise<{ success: boolean; message: string }> {
     const response = await fetch(`${this.baseUrl}/api/orders/${orderId}`, {
       method: 'DELETE',
       headers: {

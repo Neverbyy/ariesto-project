@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -21,92 +23,130 @@ const mockRestaurant = {
 // Sample data arrays (kept for potential future use)
 const orderStatuses = ['New', 'Bill', 'Closed', 'Banquet'];
 
-// Hardcoded orders by table number (keeps overlaps like in the UI example)
-const hardcodedOrdersByTableNumber = {
-  '29': [
-    { id: '29-1', status: 'New', start: '12:00', end: '19:00', customer_phone: '+79991234567', num_people: 4 },
-    { id: '29-2', status: 'Bill', start: '13:00', end: '14:00', customer_phone: '+79998889900', num_people: 2 },
-    { id: '29-3', status: 'Closed', start: '15:00', end: '17:00', customer_phone: '+79991112233', num_people: 3 }
-  ],
-  '5': [
-    { id: '5-1', status: 'New', start: '11:30', end: '12:30', customer_phone: '+79987654321', num_people: 2 },
-    { id: '5-2', status: 'Bill', start: '16:00', end: '18:00', customer_phone: '+79994445566', num_people: 5 }
-  ],
-  '6': [
-    { id: '6-1', status: 'Closed', start: '12:00', end: '14:00', customer_phone: '+79997778899', num_people: 6 }
-  ],
-  '20': [
-    { id: '20-1', status: 'New', start: '13:00', end: '15:00', customer_phone: '+79993334445', num_people: 4 }
-  ],
-  '21': [
-    { id: '21-1', status: 'Banquet', start: '18:00', end: '21:30', customer_phone: '+79996667788', num_people: 3 },
-    { id: '21-2', status: 'New', start: '22:00', end: '23:00', customer_phone: '+79992223334', num_people: 7 }
-  ],
-  '22': [
-    { id: '22-1', status: 'Bill', start: '19:00', end: '21:00', customer_phone: '+79995556667', num_people: 8 }
-  ],
-  '23': [
-    { id: '23-1', status: 'Closed', start: '14:00', end: '16:00', customer_phone: '+79998887766', num_people: 4 }
-  ],
-  '24': [
-    { id: '24-1', status: 'New', start: '15:00', end: '17:00', customer_phone: '+79991112233', num_people: 5 }
-  ],
-  '155': [
-    { id: '155-1', status: 'Banquet', start: '17:00', end: '22:00', customer_phone: '+79994443332', num_people: 6 }
-  ],
-  '28': [
-    { id: '28-1', status: 'New', start: '16:00', end: '20:00', customer_phone: '+79997776665', num_people: 10 },
-    { id: '28-2', status: 'Bill', start: '17:00', end: '18:30', customer_phone: '+79991234567', num_people: 4 }
-  ],
-  '30': [
-    { id: '30-1', status: 'Bill', start: '18:00', end: '20:00', customer_phone: '+79998889900', num_people: 2 }
-  ],
-  '191': [
-    { id: '191-1', status: 'Banquet', start: '19:00', end: '23:00', customer_phone: '+79991112233', num_people: 3 }
-  ]
+// In-memory database for storing all items (orders and reservations)
+const database = {
+  orders: new Map(), // Map<date, Map<itemId, item>>
+  nextOrderId: 1
 };
 
-// Hardcoded reservations by table number
-const hardcodedReservationsByTableNumber = {
-  '5': [
-    { id: '5-res-1', name: 'Анна', people: 4, phone: '+79991234567', status: 'Новая', start: '13:00', end: '15:00' },
-    { id: '5-res-2', name: 'Сергей', people: 2, phone: '+79998889900', status: 'Открыт', start: '20:00', end: '22:00' }
-  ],
-  '6': [
-    { id: '6-res-1', name: 'Мария', people: 3, phone: '+79991112233', status: 'Заявка', start: '14:00', end: '16:00' }
-  ],
-  '20': [
-    { id: '20-res-1', name: 'Михаил', people: 2, phone: '+79987654321', status: 'Живая очередь', start: '14:00', end: '16:00' },
-    { id: '20-res-2', name: 'Ольга', people: 5, phone: '+79994445566', status: 'Новая', start: '18:00', end: '20:00' }
-  ],
-  '21': [
-    { id: '21-res-1', name: 'Дмитрий', people: 6, phone: '+79997778899', status: 'Открыт', start: '15:00', end: '17:00' }
-  ],
-  '22': [
-    { id: '22-res-2', name: 'Алексей', people: 4, phone: '+79993334445', status: 'Живая очередь', start: '21:00', end: '22:30' }
-  ],
-  '23': [
-    { id: '23-res-1', name: 'Наталья', people: 3, phone: '+79996667788', status: 'Новая', start: '16:00', end: '18:00' }
-  ],
-  '24': [
-    { id: '24-res-1', name: 'Игорь', people: 7, phone: '+79992223334', status: 'Заявка', start: '17:00', end: '19:00' }
-  ],
-  '155': [
-    { id: '155-res-1', name: 'Татьяна', people: 8, phone: '+79995556667', status: 'Открыт', start: '18:00', end: '20:00' }
-  ],
-  '28': [
-    { id: '28-res-1', name: 'Владимир', people: 4, phone: '+79998887766', status: 'Живая очередь', start: '12:00', end: '14:00' }
-  ],
-  '29': [
-    { id: '29-res-1', name: 'Юлия', people: 5, phone: '+79991112233', status: 'Новая', start: '20:00', end: '22:00' }
-  ],
-  '30': [
-    { id: '30-res-1', name: 'Андрей', people: 6, phone: '+79994443332', status: 'Заявка', start: '19:00', end: '21:00' }
-  ],
-  '191': [
-    { id: '191-res-1', name: 'Екатерина', people: 10, phone: '+79997776665', status: 'Открыт', start: '20:00', end: '23:00' }
-  ]
+// File paths for persistent storage
+const DATA_DIR = path.join(__dirname, 'data');
+const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
+
+// Ensure data directory exists
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+// Save database to files
+const saveDatabase = () => {
+  try {
+    // Convert Maps to plain objects for JSON serialization
+    const ordersData = {};
+    database.orders.forEach((dateOrders, date) => {
+      ordersData[date] = {};
+      dateOrders.forEach((order, orderId) => {
+        ordersData[date][orderId] = order;
+      });
+    });
+
+    // Save to file
+    fs.writeFileSync(ORDERS_FILE, JSON.stringify(ordersData, null, 2));
+    
+    console.log('Database saved to files successfully');
+  } catch (error) {
+    console.error('Error saving database:', error);
+  }
 };
+
+// Load database from files
+const loadDatabase = () => {
+  try {
+    // Load all items (orders and reservations)
+    if (fs.existsSync(ORDERS_FILE)) {
+      const ordersData = JSON.parse(fs.readFileSync(ORDERS_FILE, 'utf8'));
+      database.orders.clear();
+      Object.entries(ordersData).forEach(([date, dateOrders]) => {
+        const dateMap = new Map();
+        Object.entries(dateOrders).forEach(([orderId, order]) => {
+          dateMap.set(orderId, order);
+        });
+        database.orders.set(date, dateMap);
+      });
+      console.log('All items loaded from file successfully');
+    }
+  } catch (error) {
+    console.error('Error loading database:', error);
+  }
+};
+
+// Initialize database with sample data for today
+const initializeDatabase = () => {
+  // First, try to load existing data from files
+  loadDatabase();
+  
+  const today = new Date().toISOString().split('T')[0];
+  
+      // If no data exists for today, create sample data
+    if (!database.orders.has(today) || database.orders.get(today).size === 0) {
+      console.log('No existing data found, creating sample data for today...');
+      
+      // Sample items for today (orders and reservations combined)
+      const sampleItems = [
+        // Orders
+        { id: '29-1', status: 'New', start: '12:00', end: '19:00', customer_phone: '+79991234567', num_people: 4, customer_name: 'Иван', table_id: '10' },
+        { id: '29-2', status: 'Bill', start: '13:00', end: '14:00', customer_phone: '+79998889900', num_people: 2, customer_name: 'Мария', table_id: '10' },
+        { id: '29-3', status: 'Closed', start: '15:00', end: '17:00', customer_phone: '+79991112233', num_people: 3, customer_name: 'Петр', table_id: '10' },
+        { id: '5-1', status: 'New', start: '11:30', end: '12:30', customer_phone: '+79987654321', num_people: 2, customer_name: 'Анна', table_id: '1' },
+        { id: '5-2', status: 'Bill', start: '16:00', end: '18:00', customer_phone: '+79994445566', num_people: 5, customer_name: 'Сергей', table_id: '1' },
+        { id: '6-1', status: 'Closed', start: '12:00', end: '14:00', customer_phone: '+79997778899', num_people: 6, customer_name: 'Ольга', table_id: '2' },
+        { id: '20-1', status: 'New', start: '13:00', end: '15:00', customer_phone: '+79993334445', num_people: 4, customer_name: 'Дмитрий', table_id: '4' },
+        { id: '21-1', status: 'Banquet', start: '18:00', end: '21:30', customer_phone: '+79996667788', num_people: 3, customer_name: 'Елена', table_id: '5' },
+        { id: '21-2', status: 'New', start: '22:00', end: '23:00', customer_phone: '+79992223334', num_people: 7, customer_name: 'Алексей', table_id: '5' },
+        { id: '22-1', status: 'Bill', start: '19:00', end: '21:00', customer_phone: '+79995556667', num_people: 8, customer_name: 'Наталья', table_id: '6' },
+        { id: '23-1', status: 'Closed', start: '14:00', end: '16:00', customer_phone: '+79998887766', num_people: 4, customer_name: 'Михаил', table_id: '7' },
+        { id: '24-1', status: 'New', start: '15:00', end: '17:00', customer_phone: '+79991112233', num_people: 5, customer_name: 'Татьяна', table_id: '8' },
+        { id: '155-1', status: 'Banquet', start: '17:00', end: '22:00', customer_phone: '+79994443332', num_people: 6, customer_name: 'Андрей', table_id: '3' },
+        { id: '28-1', status: 'New', start: '16:00', end: '20:00', customer_phone: '+79997776665', num_people: 10, customer_name: 'Юлия', table_id: '9' },
+        { id: '28-2', status: 'Bill', start: '17:00', end: '18:30', customer_phone: '+79991234567', num_people: 4, customer_name: 'Владимир', table_id: '9' },
+        { id: '30-1', status: 'Bill', start: '18:00', end: '20:00', customer_phone: '+79998889900', num_people: 2, customer_name: 'Игорь', table_id: '11' },
+        { id: '191-1', status: 'Banquet', start: '19:00', end: '23:00', customer_phone: '+79991112233', num_people: 3, customer_name: 'Екатерина', table_id: '12' },
+        
+        // Reservations (now with status Reservation or LiveQueue)
+        { id: '5-res-1', status: 'Reservation', start: '13:00', end: '15:00', customer_phone: '+79991234567', num_people: 4, customer_name: 'Анна', table_id: '1' },
+        { id: '5-res-2', status: 'Reservation', start: '20:00', end: '22:00', customer_phone: '+79998889900', num_people: 2, customer_name: 'Сергей', table_id: '1' },
+        { id: '6-res-1', status: 'Reservation', start: '14:00', end: '16:00', customer_phone: '+79991112233', num_people: 3, customer_name: 'Мария', table_id: '2' },
+        { id: '20-res-1', status: 'LiveQueue', start: '14:00', end: '16:00', customer_phone: '+79987654321', num_people: 2, customer_name: 'Михаил', table_id: '4' },
+        { id: '20-res-2', status: 'Reservation', start: '18:00', end: '20:00', customer_phone: '+79994445566', num_people: 5, customer_name: 'Ольга', table_id: '4' },
+        { id: '21-res-1', status: 'Reservation', start: '15:00', end: '17:00', customer_phone: '+79997778899', num_people: 6, customer_name: 'Дмитрий', table_id: '5' },
+        { id: '22-res-2', status: 'LiveQueue', start: '21:00', end: '22:30', customer_phone: '+79993334445', num_people: 4, customer_name: 'Алексей', table_id: '6' },
+        { id: '23-res-1', status: 'Reservation', start: '16:00', end: '18:00', customer_phone: '+79996667788', num_people: 3, customer_name: 'Наталья', table_id: '7' },
+        { id: '24-res-1', status: 'Reservation', start: '17:00', end: '19:00', customer_phone: '+79992223334', num_people: 7, customer_name: 'Игорь', table_id: '8' },
+        { id: '155-res-1', status: 'Reservation', start: '18:00', end: '20:00', customer_phone: '+79995556667', num_people: 8, customer_name: 'Татьяна', table_id: '3' },
+        { id: '28-res-1', status: 'LiveQueue', start: '12:00', end: '14:00', customer_phone: '+79998887766', num_people: 4, customer_name: 'Владимир', table_id: '9' },
+        { id: '29-res-1', status: 'Reservation', start: '20:00', end: '22:00', customer_phone: '+79991112233', num_people: 5, customer_name: 'Юлия', table_id: '10' },
+        { id: '30-res-1', status: 'Reservation', start: '19:00', end: '21:00', customer_phone: '+79994443332', num_people: 6, customer_name: 'Андрей', table_id: '11' },
+        { id: '191-res-1', status: 'Reservation', start: '20:00', end: '23:00', customer_phone: '+79997776665', num_people: 10, customer_name: 'Екатерина', table_id: '12' }
+      ];
+
+      // Store all items in database
+      database.orders.set(today, new Map());
+      
+      sampleItems.forEach(item => {
+        database.orders.get(today).set(item.id, item);
+      });
+      
+      // Save sample data to files
+      saveDatabase();
+    } else {
+      console.log('Existing data loaded from files');
+    }
+};
+
+// Initialize database on server start
+initializeDatabase();
+
+// Hardcoded data removed - now using database
 
 // POST /api/orders - Create a new order
 app.post('/api/orders', (req, res) => {
@@ -128,39 +168,50 @@ app.post('/api/orders', (req, res) => {
       });
     }
     
-    // Generate a unique ID for the new order
-    const orderId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
-    // Create the new order object
-    const newOrder = {
-      id: orderId,
-      status: status || 'New',
-      start_time,
-      end_time,
-      customer_name,
-      customer_phone,
-      num_people: parseInt(num_people),
-      tables: Array.isArray(tables) ? tables : [tables]
-    };
-    
     // Extract date from start_time for storage
     const orderDate = start_time.split('T')[0];
     
-    // Store the new order in memory (in a real app, this would go to a database)
-    if (!global.newOrders) {
-      global.newOrders = {};
-    }
-    if (!global.newOrders[orderDate]) {
-      global.newOrders[orderDate] = [];
-    }
-    global.newOrders[orderDate].push(newOrder);
+    // Create orders for each selected table
+    const createdOrders = [];
     
-    console.log('Created new order:', newOrder);
+    tables.forEach(tableId => {
+      // Generate a unique ID for the new order
+      const orderId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Extract time from ISO string
+      const startTime = start_time.match(/T(\d{2}:\d{2}):\d{2}/)?.[1] || '00:00';
+      const endTime = end_time.match(/T(\d{2}:\d{2}):\d{2}/)?.[1] || '00:00';
+      
+      // Create the new order object
+      const newOrder = {
+        id: orderId,
+        status: status || 'New',
+        start: startTime,
+        end: endTime,
+        customer_name,
+        customer_phone,
+        num_people: parseInt(num_people),
+        table_id: tableId
+      };
+      
+      // Store the new order in database
+      if (!database.orders.has(orderDate)) {
+        database.orders.set(orderDate, new Map());
+      }
+      database.orders.get(orderDate).set(orderId, newOrder);
+      
+      createdOrders.push(newOrder);
+    });
+    
+    // Save database to files after creating orders
+    saveDatabase();
+    
+    console.log('Created new orders:', createdOrders);
     
     res.status(201).json({
       success: true,
-      order: newOrder,
-      message: 'Order created successfully'
+      orders: createdOrders,
+      message: 'Orders created successfully'
     });
     
   } catch (error) {
@@ -180,26 +231,22 @@ app.delete('/api/orders/:id', (req, res) => {
     
     let orderDeleted = false;
     
-    // Check if it's a new order (created via API)
-    if (global.newOrders) {
-      for (const date in global.newOrders) {
-        const orderIndex = global.newOrders[date].findIndex(order => order.id === id);
-        if (orderIndex !== -1) {
-          global.newOrders[date].splice(orderIndex, 1);
-          orderDeleted = true;
-          console.log(`Deleted new order ${id} from date ${date}`);
-          break;
-        }
+    // Search for the item in database
+    for (const [date, dateItems] of database.orders) {
+      if (dateItems.has(id)) {
+        dateItems.delete(id);
+        orderDeleted = true;
+        console.log(`Deleted item ${id} from date ${date}`);
+        break;
       }
     }
     
-    // If not found in new orders, it might be a hardcoded order
-    // In a real app, you would delete from database
     if (!orderDeleted) {
-      console.log(`Order ${id} not found in new orders (might be hardcoded)`);
-      // For demo purposes, we'll return success even for hardcoded orders
-      orderDeleted = true;
+      return res.status(404).json({ error: 'Order or reservation not found' });
     }
+    
+    // Save database to files after deleting
+    saveDatabase();
     
     res.json({
       success: true,
@@ -231,45 +278,41 @@ const generateMockTables = (date) => {
 
   return baseTables.map((table) => {
     
-    // Use hardcoded orders for this table (no random generation)
-    const orders = (hardcodedOrdersByTableNumber[table.number] || []).map((o) => ({
-      id: o.id,
-      status: o.status,
-      start_time: `${date}T${o.start}:00+10:00`,
-      end_time: `${date}T${o.end}:00+10:00`,
-      customer_phone: o.customer_phone,
-      num_people: o.num_people
-    }));
+    // Get all items (orders and reservations) from database for this table and date
+    const orders = [];
+    const reservations = [];
     
-    // Add new orders created via API for this table
-    if (global.newOrders && global.newOrders[date]) {
-      const newOrdersForTable = global.newOrders[date].filter(order => 
-        order.tables.includes(table.id)
-      );
-      
-      newOrdersForTable.forEach(order => {
-        orders.push({
-          id: order.id,
-          status: order.status,
-          start_time: order.start_time,
-          end_time: order.end_time,
-          customer_name: order.customer_name,
-          customer_phone: order.customer_phone,
-          num_people: order.num_people
-        });
+    if (database.orders.has(date)) {
+      const dateItems = database.orders.get(date);
+      dateItems.forEach((item, itemId) => {
+        if (item.table_id === table.id) {
+          // Determine if it's an order or reservation based on status
+          if (item.status === 'Reservation' || item.status === 'LiveQueue') {
+            // This is a reservation
+            reservations.push({
+              id: item.id,
+              name_for_reservation: item.customer_name,
+              num_people: item.num_people,
+              phone_number: item.customer_phone,
+              status: item.status === 'LiveQueue' ? 'Живая очередь' : item.status,
+              seating_time: `${date}T${item.start}:00+10:00`,
+              end_time: `${date}T${item.end}:00+10:00`
+            });
+          } else {
+            // This is an order
+            orders.push({
+              id: item.id,
+              status: item.status,
+              start_time: `${date}T${item.start}:00+10:00`,
+              end_time: `${date}T${item.end}:00+10:00`,
+              customer_phone: item.customer_phone,
+              num_people: item.num_people,
+              customer_name: item.customer_name
+            });
+          }
+        }
       });
     }
-    
-    // Use hardcoded reservations for this table
-    const reservations = (hardcodedReservationsByTableNumber[table.number] || []).map((r) => ({
-      id: r.id,
-      name_for_reservation: r.name,
-      num_people: r.people,
-      phone_number: r.phone,
-      status: r.status,
-      seating_time: `${date}T${r.start}:00+10:00`,
-      end_time: `${date}T${r.end}:00+10:00`
-    }));
     
     return {
       ...table,
@@ -368,6 +411,55 @@ app.get('/api/restaurant', (req, res) => {
   }
 });
 
+// GET /api/orders - Get all orders for a specific date
+app.get('/api/orders/:date', (req, res) => {
+  try {
+    const { date } = req.params;
+    
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD' });
+    }
+    
+    const orders = database.orders.has(date) ? Array.from(database.orders.get(date).values()) : [];
+    
+    res.json({
+      success: true,
+      date,
+      orders
+    });
+  } catch (error) {
+    console.error('Error getting orders:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/reservations/:date - Get all items for a specific date (orders and reservations combined)
+app.get('/api/reservations/:date', (req, res) => {
+  try {
+    const { date } = req.params;
+    
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD' });
+    }
+    
+    const allItems = database.orders.has(date) ? Array.from(database.orders.get(date).values()) : [];
+    
+    // Separate orders and reservations
+    const orders = allItems.filter(item => !['Reservation', 'LiveQueue'].includes(item.status));
+    const reservations = allItems.filter(item => ['Reservation', 'LiveQueue'].includes(item.status));
+    
+    res.json({
+      success: true,
+      date,
+      orders,
+      reservations
+    });
+  } catch (error) {
+    console.error('Error getting items:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // GET /api/available-days - Get available days
 app.get('/api/available-days', (req, res) => {
   try {
@@ -380,7 +472,23 @@ app.get('/api/available-days', (req, res) => {
 
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT}`);
   console.log(`📅 API available at http://localhost:${PORT}/api`);
+  console.log(`💾 Data will be saved to: ${DATA_DIR}`);
+});
+
+// Graceful shutdown - save data before exiting
+process.on('SIGINT', () => {
+  console.log('\n🔄 Shutting down gracefully...');
+  saveDatabase();
+  console.log('💾 Database saved successfully');
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log('\n🔄 Shutting down gracefully...');
+  saveDatabase();
+  console.log('💾 Database saved successfully');
+  process.exit(0);
 });

@@ -19,7 +19,7 @@
             <span v-if="orderCustomerName && shouldShowCustomerName && orderPeopleText && shouldShowPeople">; </span>
             <span v-if="orderPeopleText && shouldShowPeople">{{ orderPeopleText }}</span>
           </div>
-          <div class="phone-text" v-if="orderPhoneSuffix && shouldShowPhone">📞 {{ orderPhoneSuffix }}</div>
+          <div class="phone-text" v-if="orderPhoneFull && shouldShowPhone">📞 {{ orderPhoneFull }}</div>
         </div>
       </template>
       
@@ -49,8 +49,10 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue';
 
+import type { TableItem } from '../types/reservation';
+
 interface Props {
-  item: any;
+  item: TableItem & { type: 'order' | 'reservation'; startTime?: string; endTime?: string; overlapIndex?: number };
   timeSlot: string;
   verticalScale: number;
   isSelected?: boolean;
@@ -59,8 +61,8 @@ interface Props {
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-  click: [item: any];
-  delete: [item: any];
+  click: [item: TableItem];
+  delete: [item: TableItem];
 }>();
 
 const isHovered = ref(false);
@@ -103,7 +105,8 @@ const itemClass = computed(() => {
     return 'order-regular';
   }
   // Reservations
-  if (props.item.status === 'Живая очередь') return 'reservation-live';
+  if (props.item.status === 'LiveQueue') return 'reservation-live';
+  if (props.item.status === 'Reservation') return 'reservation-regular';
   return 'reservation-regular';
 });
 
@@ -117,8 +120,8 @@ const itemStyle = computed(() => {
   const startTimeStr = props.item.type === 'order' ? props.item.start_time : props.item.seating_time;
   const endTimeStr = props.item.end_time;
   
-  const startTime = extractTimeFromISO(startTimeStr);
-  const endTime = extractTimeFromISO(endTimeStr);
+  const startTime = extractTimeFromISO(startTimeStr || '');
+  const endTime = extractTimeFromISO(endTimeStr || '');
   
   const [startHours, startMinutes] = startTime.split(':').map(Number);
   const [endHours, endMinutes] = endTime.split(':').map(Number);
@@ -187,8 +190,8 @@ const itemTitle = computed(() => props.item.type === 'order' ? 'Заказ' : pr
 
 const reservationTimeText = computed(() => {
   if (props.item.type === 'reservation') {
-    const startTime = extractTimeFromISO(props.item.seating_time);
-    const endTime = extractTimeFromISO(props.item.end_time);
+    const startTime = extractTimeFromISO(props.item.seating_time || '');
+    const endTime = extractTimeFromISO(props.item.end_time || '');
     return `${startTime}-${endTime}`;
   }
   return '';
@@ -207,8 +210,8 @@ const orderStatusText = computed(() => {
 });
 
 const orderTimeText = computed(() => {
-  const startTime = extractTimeFromISO(props.item.start_time);
-  const endTime = extractTimeFromISO(props.item.end_time);
+  const startTime = extractTimeFromISO(props.item.start_time || '');
+  const endTime = extractTimeFromISO(props.item.end_time || '');
   return `${startTime}-${endTime}`;
 });
 
@@ -218,7 +221,7 @@ const phoneSuffix = computed(() => props.item.type === 'reservation' ? String(pr
 
 // Для заказов
 const orderCustomerName = computed(() => props.item.type === 'order' && props.item.customer_name ? props.item.customer_name : '');
-const orderPhoneSuffix = computed(() => props.item.type === 'order' && props.item.customer_phone ? String(props.item.customer_phone).slice(-4) : '');
+const orderPhoneFull = computed(() => props.item.type === 'order' && props.item.customer_phone ? props.item.customer_phone : '');
 const orderPeopleText = computed(() => props.item.type === 'order' && props.item.num_people ? `${props.item.num_people} чел` : '');
 
 // Определяем, что показывать в зависимости от высоты заказа и масштаба
@@ -290,8 +293,8 @@ const getDurationClass = () => {
   
   const startTimeStr = props.item.start_time;
   const endTimeStr = props.item.end_time;
-  const startTime = extractTimeFromISO(startTimeStr);
-  const endTime = extractTimeFromISO(endTimeStr);
+  const startTime = extractTimeFromISO(startTimeStr || '');
+  const endTime = extractTimeFromISO(endTimeStr || '');
   
   const [startHours, startMinutes] = startTime.split(':').map(Number);
   const [endHours, endMinutes] = endTime.split(':').map(Number);
@@ -310,7 +313,7 @@ const getDeleteButtonTitle = () => {
     case 'order':
       return 'Удалить заказ';
     case 'reservation':
-      if (props.item.status === 'Живая очередь') {
+      if (props.item.status === 'LiveQueue') {
         return 'Удалить из живой очереди';
       }
       return 'Удалить бронирование';
@@ -321,7 +324,7 @@ const getDeleteButtonTitle = () => {
 
 const handleDelete = () => {
   const itemType = props.item.type === 'order' ? 'заказ' : 
-                   props.item.status === 'Живая очередь' ? 'запись из живой очереди' : 'бронирование';
+                   props.item.status === 'LiveQueue' ? 'запись из живой очереди' : 'бронирование';
   
   if (confirm(`Вы уверены, что хотите удалить этот ${itemType}?`)) {
     emit('delete', props.item);
@@ -420,8 +423,10 @@ const handleDelete = () => {
 
 /* Light theme support */
 :global(.light-theme) .status-badge {
-  background-color: rgba(0,0,0,.1);
-  color: #333333;
+  background-color: rgba(0,0,0,.15);
+  color: #1a1a1a;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .time-display { 
@@ -548,38 +553,75 @@ const handleDelete = () => {
 /* Colors per spec using CSS variables */
 /* Обычные заказы (Новый, Пречек, Закрытый) */
 .order-regular { 
-  background-color: color-mix(in srgb, var(--card-order-regular) 15%, transparent); 
-  border-left: 3px solid var(--card-order-regular); 
+  background-color: color-mix(in srgb, var(--card-order-regular) 25%, transparent); 
+  border-left: 4px solid var(--card-order-regular); 
 }
 
 /* Банкет */
 .order-banquet { 
-  background-color: color-mix(in srgb, var(--card-order-banquet) 15%, transparent); 
-  border-left: 3px solid var(--card-order-banquet); 
+  background-color: color-mix(in srgb, var(--card-order-banquet) 25%, transparent); 
+  border-left: 4px solid var(--card-order-banquet); 
 }
 
 /* Бронирование (заказ) */
 .order-reservation { 
-  background-color: color-mix(in srgb, var(--card-reservation-regular) 15%, transparent); 
-  border-left: 3px solid var(--card-reservation-regular); 
+  background-color: color-mix(in srgb, var(--card-reservation-regular) 25%, transparent); 
+  border-left: 4px solid var(--card-reservation-regular); 
 }
 
 /* Живая очередь (заказ) */
 .order-live-queue { 
-  background-color: color-mix(in srgb, var(--card-reservation-live) 15%, transparent); 
-  border-left: 3px solid var(--card-reservation-live); 
+  background-color: color-mix(in srgb, var(--card-reservation-live) 25%, transparent); 
+  border-left: 4px solid var(--card-reservation-live); 
 }
 
 /* Живая очередь */
 .reservation-live { 
-  background-color: color-mix(in srgb, var(--card-reservation-live) 15%, transparent); 
-  border-left: 3px solid var(--card-reservation-live); 
+  background-color: color-mix(in srgb, var(--card-reservation-live) 25%, transparent); 
+  border-left: 4px solid var(--card-reservation-live); 
 }
 
 /* Бронирования (прочие статусы) */
 .reservation-regular { 
-  background-color: color-mix(in srgb, var(--card-reservation-regular) 15%, transparent); 
-  border-left: 3px solid var(--card-reservation-regular); 
+  background-color: color-mix(in srgb, var(--card-reservation-regular) 25%, transparent); 
+  border-left: 4px solid var(--card-reservation-regular); 
+}
+
+/* Light theme specific styles for better contrast */
+:global(.light-theme) .order-regular { 
+  background-color: color-mix(in srgb, var(--card-order-regular) 35%, transparent); 
+  border-left: 5px solid var(--card-order-regular); 
+  box-shadow: 0 2px 8px rgba(29, 78, 216, 0.15);
+}
+
+:global(.light-theme) .order-banquet { 
+  background-color: color-mix(in srgb, var(--card-order-banquet) 35%, transparent); 
+  border-left: 5px solid var(--card-order-banquet); 
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.15);
+}
+
+:global(.light-theme) .order-reservation { 
+  background-color: color-mix(in srgb, var(--card-reservation-regular) 35%, transparent); 
+  border-left: 5px solid var(--card-reservation-regular); 
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.15);
+}
+
+:global(.light-theme) .order-live-queue { 
+  background-color: color-mix(in srgb, var(--card-reservation-live) 35%, transparent); 
+  border-left: 5px solid var(--card-reservation-live); 
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.15);
+}
+
+:global(.light-theme) .reservation-live { 
+  background-color: color-mix(in srgb, var(--card-reservation-live) 35%, transparent); 
+  border-left: 5px solid var(--card-reservation-live); 
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.15);
+}
+
+:global(.light-theme) .reservation-regular { 
+  background-color: color-mix(in srgb, var(--card-reservation-regular) 35%, transparent); 
+  border-left: 5px solid var(--card-reservation-regular); 
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.15);
 }
 
 </style>

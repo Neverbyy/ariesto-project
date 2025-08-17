@@ -22,6 +22,12 @@
   --border-color: #404040;
   --accent-color: #3b82f6;
   
+  /* Order and reservation colors */
+  --card-order-regular: #3b82f6;    /* Blue for regular orders */
+  --card-order-banquet: #f59e0b;    /* Amber for banquet orders */
+  --card-reservation-regular: #10b981; /* Green for reservations */
+  --card-reservation-live: #ef4444;   /* Red for live queue */
+  
   /* Scale widget variables */
   --scale-widget-bg: #2a2a2a;
   --scale-widget-border: #404040;
@@ -42,6 +48,12 @@
   --text-muted: #606060;
   --border-color: #d0d0d0;
   --accent-color: #2563eb;
+  
+  /* More saturated colors for light theme */
+  --card-order-regular: #1d4ed8;    /* Darker blue for better contrast */
+  --card-order-banquet: #d97706;    /* Darker amber for better contrast */
+  --card-reservation-regular: #059669; /* Darker green for better contrast */
+  --card-reservation-live: #dc2626;   /* Darker red for better contrast */
   
   --scale-widget-bg: #f5f5f5;
   --scale-widget-border: #d0d0d0;

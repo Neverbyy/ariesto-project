@@ -1,0 +1,336 @@
+{
+  "2025-08-17": {
+    "29-1": {
+      "id": "29-1",
+      "status": "New",
+      "start": "12:00",
+      "end": "19:00",
+      "customer_phone": "+79991234567",
+      "num_people": 4,
+      "customer_name": "Иван",
+      "table_id": "10"
+    },
+    "29-2": {
+      "id": "29-2",
+      "status": "Bill",
+      "start": "13:00",
+      "end": "14:00",
+      "customer_phone": "+79998889900",
+      "num_people": 2,
+      "customer_name": "Мария",
+      "table_id": "10"
+    },
+    "29-3": {
+      "id": "29-3",
+      "status": "Closed",
+      "start": "15:00",
+      "end": "17:00",
+      "customer_phone": "+79991112233",
+      "num_people": 3,
+      "customer_name": "Петр",
+      "table_id": "10"
+    },
+    "5-1": {
+      "id": "5-1",
+      "status": "New",
+      "start": "11:30",
+      "end": "12:30",
+      "customer_phone": "+79987654321",
+      "num_people": 2,
+      "customer_name": "Анна",
+      "table_id": "1"
+    },
+    "5-2": {
+      "id": "5-2",
+      "status": "Bill",
+      "start": "16:00",
+      "end": "18:00",
+      "customer_phone": "+79994445566",
+      "num_people": 5,
+      "customer_name": "Сергей",
+      "table_id": "1"
+    },
+    "6-1": {
+      "id": "6-1",
+      "status": "Closed",
+      "start": "12:00",
+      "end": "14:00",
+      "customer_phone": "+79997778899",
+      "num_people": 6,
+      "customer_name": "Ольга",
+      "table_id": "2"
+    },
+    "20-1": {
+      "id": "20-1",
+      "status": "New",
+      "start": "13:00",
+      "end": "15:00",
+      "customer_phone": "+79993334445",
+      "num_people": 4,
+      "customer_name": "Дмитрий",
+      "table_id": "4"
+    },
+    "21-1": {
+      "id": "21-1",
+      "status": "Banquet",
+      "start": "18:00",
+      "end": "21:30",
+      "customer_phone": "+79996667788",
+      "num_people": 3,
+      "customer_name": "Елена",
+      "table_id": "5"
+    },
+    "21-2": {
+      "id": "21-2",
+      "status": "New",
+      "start": "22:00",
+      "end": "23:00",
+      "customer_phone": "+79992223334",
+      "num_people": 7,
+      "customer_name": "Алексей",
+      "table_id": "5"
+    },
+    "22-1": {
+      "id": "22-1",
+      "status": "Bill",
+      "start": "19:00",
+      "end": "21:00",
+      "customer_phone": "+79995556667",
+      "num_people": 8,
+      "customer_name": "Наталья",
+      "table_id": "6"
+    },
+    "23-1": {
+      "id": "23-1",
+      "status": "Closed",
+      "start": "14:00",
+      "end": "16:00",
+      "customer_phone": "+79998887766",
+      "num_people": 4,
+      "customer_name": "Михаил",
+      "table_id": "7"
+    },
+    "24-1": {
+      "id": "24-1",
+      "status": "New",
+      "start": "15:00",
+      "end": "17:00",
+      "customer_phone": "+79991112233",
+      "num_people": 5,
+      "customer_name": "Татьяна",
+      "table_id": "8"
+    },
+    "155-1": {
+      "id": "155-1",
+      "status": "Banquet",
+      "start": "17:00",
+      "end": "22:00",
+      "customer_phone": "+79994443332",
+      "num_people": 6,
+      "customer_name": "Андрей",
+      "table_id": "3"
+    },
+    "28-1": {
+      "id": "28-1",
+      "status": "New",
+      "start": "16:00",
+      "end": "20:00",
+      "customer_phone": "+79997776665",
+      "num_people": 10,
+      "customer_name": "Юлия",
+      "table_id": "9"
+    },
+    "28-2": {
+      "id": "28-2",
+      "status": "Bill",
+      "start": "17:00",
+      "end": "18:30",
+      "customer_phone": "+79991234567",
+      "num_people": 4,
+      "customer_name": "Владимир",
+      "table_id": "9"
+    },
+    "30-1": {
+      "id": "30-1",
+      "status": "Bill",
+      "start": "18:00",
+      "end": "20:00",
+      "customer_phone": "+79998889900",
+      "num_people": 2,
+      "customer_name": "Игорь",
+      "table_id": "11"
+    },
+    "191-1": {
+      "id": "191-1",
+      "status": "Banquet",
+      "start": "19:00",
+      "end": "23:00",
+      "customer_phone": "+79991112233",
+      "num_people": 3,
+      "customer_name": "Екатерина",
+      "table_id": "12"
+    },
+    "5-res-1": {
+      "id": "5-res-1",
+      "status": "Reservation",
+      "start": "13:00",
+      "end": "15:00",
+      "customer_phone": "+79991234567",
+      "num_people": 4,
+      "customer_name": "Анна",
+      "table_id": "1"
+    },
+    "5-res-2": {
+      "id": "5-res-2",
+      "status": "Reservation",
+      "start": "20:00",
+      "end": "22:00",
+      "customer_phone": "+79998889900",
+      "num_people": 2,
+      "customer_name": "Сергей",
+      "table_id": "1"
+    },
+    "6-res-1": {
+      "id": "6-res-1",
+      "status": "Reservation",
+      "start": "14:00",
+      "end": "16:00",
+      "customer_phone": "+79991112233",
+      "num_people": 3,
+      "customer_name": "Мария",
+      "table_id": "2"
+    },
+    "20-res-1": {
+      "id": "20-res-1",
+      "status": "LiveQueue",
+      "start": "14:00",
+      "end": "16:00",
+      "customer_phone": "+79987654321",
+      "num_people": 2,
+      "customer_name": "Михаил",
+      "table_id": "4"
+    },
+    "20-res-2": {
+      "id": "20-res-2",
+      "status": "Reservation",
+      "start": "18:00",
+      "end": "20:00",
+      "customer_phone": "+79994445566",
+      "num_people": 5,
+      "customer_name": "Ольга",
+      "table_id": "4"
+    },
+    "21-res-1": {
+      "id": "21-res-1",
+      "status": "Reservation",
+      "start": "15:00",
+      "end": "17:00",
+      "customer_phone": "+79997778899",
+      "num_people": 6,
+      "customer_name": "Дмитрий",
+      "table_id": "5"
+    },
+    "22-res-2": {
+      "id": "22-res-2",
+      "status": "LiveQueue",
+      "start": "21:00",
+      "end": "22:30",
+      "customer_phone": "+79993334445",
+      "num_people": 4,
+      "customer_name": "Алексей",
+      "table_id": "6"
+    },
+    "23-res-1": {
+      "id": "23-res-1",
+      "status": "Reservation",
+      "start": "16:00",
+      "end": "18:00",
+      "customer_phone": "+79996667788",
+      "num_people": 3,
+      "customer_name": "Наталья",
+      "table_id": "7"
+    },
+    "24-res-1": {
+      "id": "24-res-1",
+      "status": "Reservation",
+      "start": "17:00",
+      "end": "19:00",
+      "customer_phone": "+79992223334",
+      "num_people": 7,
+      "customer_name": "Игорь",
+      "table_id": "8"
+    },
+    "155-res-1": {
+      "id": "155-res-1",
+      "status": "Reservation",
+      "start": "18:00",
+      "end": "20:00",
+      "customer_phone": "+79995556667",
+      "num_people": 8,
+      "customer_name": "Татьяна",
+      "table_id": "3"
+    },
+    "28-res-1": {
+      "id": "28-res-1",
+      "status": "LiveQueue",
+      "start": "12:00",
+      "end": "14:00",
+      "customer_phone": "+79998887766",
+      "num_people": 4,
+      "customer_name": "Владимир",
+      "table_id": "9"
+    },
+    "30-res-1": {
+      "id": "30-res-1",
+      "status": "Reservation",
+      "start": "19:00",
+      "end": "21:00",
+      "customer_phone": "+79994443332",
+      "num_people": 6,
+      "customer_name": "Андрей",
+      "table_id": "11"
+    },
+    "191-res-1": {
+      "id": "191-res-1",
+      "status": "Reservation",
+      "start": "20:00",
+      "end": "23:00",
+      "customer_phone": "+79997776665",
+      "num_people": 10,
+      "customer_name": "Екатерина",
+      "table_id": "12"
+    },
+    "new-1755428229279-211dowaus": {
+      "id": "new-1755428229279-211dowaus",
+      "status": "Reservation",
+      "start": "20:30",
+      "end": "22:00",
+      "customer_name": "Юлия",
+      "customer_phone": "9308837034",
+      "num_people": 3,
+      "table_id": "10"
+    },
+    "new-1755428246204-yb7mb39q0": {
+      "id": "new-1755428246204-yb7mb39q0",
+      "status": "New",
+      "start": "21:00",
+      "end": "23:00",
+      "customer_name": "Артём",
+      "customer_phone": "9308837034",
+      "num_people": 1,
+      "table_id": "8"
+    }
+  },
+  "2025-08-18": {
+    "new-1755428329644-vstto9xhl": {
+      "id": "new-1755428329644-vstto9xhl",
+      "status": "Banquet",
+      "start": "11:00",
+      "end": "13:30",
+      "customer_name": "Artem",
+      "customer_phone": "1212",
+      "num_people": 1,
+      "table_id": "1"
+    }
+  }
+}
