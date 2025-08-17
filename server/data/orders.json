@@ -362,5 +362,17 @@
       "num_people": 1,
       "table_id": "1"
     }
+  },
+  "2025-08-21": {
+    "new-1755430864329-mdum36uuc": {
+      "id": "new-1755430864329-mdum36uuc",
+      "status": "Reservation",
+      "start": "12:00",
+      "end": "15:30",
+      "customer_name": "Владимир",
+      "customer_phone": "35345",
+      "num_people": 1,
+      "table_id": "6"
+    }
   }
 }

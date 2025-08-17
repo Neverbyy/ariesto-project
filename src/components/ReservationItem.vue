@@ -47,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 
 import type { TableItem } from '../types/reservation';
 
@@ -67,10 +67,10 @@ const emit = defineEmits<{
 
 const isHovered = ref(false);
 
-// Reactive scale tracking - упрощенная версия
+// Отслеживание масштаба - упрощенная версия
 const scale = ref({ horizontalScale: 1, verticalScale: 1 });
 
-// Update scale when component mounts
+// Обновляем масштаб при монтировании компонента
 const updateScale = () => {
   const parentElement = document.querySelector('.reservation-grid-container');
   if (parentElement) {
@@ -90,15 +90,15 @@ const itemClass = computed(() => {
     if (props.item.status === 'Banquet') return 'order-banquet';
     if (props.item.status === 'Reservation') return 'order-reservation';
     if (props.item.status === 'LiveQueue') return 'order-live-queue';
-    // New, Bill, Closed → обычные заказы
+    // Новый, Пречек, Закрытый → обычные заказы
     return 'order-regular';
   }
-  // Reservations
+  // Бронирования
   if (props.item.status === 'Reservation') return 'reservation-regular';
   return 'reservation-regular';
 });
 
-// Helper function to extract time from ISO string without timezone issues
+// Вспомогательная функция для извлечения времени из ISO строки без проблем с часовым поясом
 const extractTimeFromISO = (isoString: string): string => {
   const timeMatch = isoString.match(/T(\d{2}:\d{2}):\d{2}/);
   return timeMatch ? timeMatch[1] : '';
@@ -322,7 +322,7 @@ const handleDelete = () => {
   backdrop-filter: blur(10px);
 }
 
-/* Theme support for reservation items */
+/* Поддержка темы для элементов бронирования */
 .reservation-item {
   color: var(--text-primary);
 }
@@ -393,7 +393,7 @@ const handleDelete = () => {
   white-space: nowrap;
 }
 
-/* Light theme support */
+/* Поддержка светлой темы */
 :global(.light-theme) .status-badge {
   background-color: rgba(0,0,0,.15);
   color: #1a1a1a;
@@ -522,7 +522,7 @@ const handleDelete = () => {
 
 
 
-/* Colors per spec using CSS variables */
+/* Цвета согласно спецификации с использованием CSS переменных */
 /* Обычные заказы (Новый, Пречек, Закрытый) */
 .order-regular { 
   background-color: color-mix(in srgb, var(--card-order-regular) 25%, transparent); 
@@ -559,7 +559,7 @@ const handleDelete = () => {
   border-left: 4px solid var(--card-reservation-regular); 
 }
 
-/* Light theme specific styles for better contrast */
+/* Специфичные стили для светлой темы для лучшего контраста */
 :global(.light-theme) .order-regular { 
   background-color: color-mix(in srgb, var(--card-order-regular) 35%, transparent); 
   border-left: 5px solid var(--card-order-regular); 

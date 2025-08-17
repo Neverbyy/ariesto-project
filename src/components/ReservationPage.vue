@@ -244,20 +244,20 @@ import type { ReservationData, Table, ZoneType, TableItem } from '../types/reser
 import { reservationApi } from '../services/api';
 import ReservationItem from './ReservationItem.vue';
 
-// Reactive data
+  // Реактивные данные
 const reservationData = ref<ReservationData | null>(null);
 const selectedDate = ref<string>('');
 const selectedZones = ref<ZoneType[]>([]);
 const searchQuery = ref<string>('');
 
-// Scale state
-const horizontalScale = ref(0.5); // Base scale for horizontal (table columns) - most zoomed out
-const verticalScale = ref(0.5);   // Base scale for vertical (time slots) - most zoomed out
+  // Состояние масштаба
+  const horizontalScale = ref(0.5); // Базовый масштаб для горизонтали (столбцы таблиц) - максимально отдалено
+  const verticalScale = ref(0.5);   // Базовый масштаб для вертикали (временные слоты) - максимально отдалено
 
-// Theme state
-const isDarkTheme = ref(true); // Default to dark theme
+  // Состояние темы
+  const isDarkTheme = ref(true); // По умолчанию темная тема
 
-// Drag state for creating new orders
+  // Состояние перетаскивания для создания новых заказов
 const isDragging = ref(false);
 const dragData = ref<{
   table: Table | null;
@@ -281,7 +281,7 @@ const dragData = ref<{
   isHorizontalDrag: false
 });
 
-// Modal state for new order
+  // Состояние модального окна для нового заказа
 const showNewOrderModal = ref(false);
 const newOrderData = ref<{
   startTime: string;
@@ -305,10 +305,10 @@ const newOrderData = ref<{
   status: 'New'
 });
 
-// Selected item for deletion (orders, reservations, live queue)
+  // Выбранный элемент для удаления (заказы, бронирования, живая очередь)
 const selectedOrder = ref<TableItem | null>(null);
 
-// Computed properties
+  // Вычисляемые свойства
 const restaurant = computed(() => reservationData.value?.restaurant);
 const availableDays = computed(() => {
   // Используем только данные от API
@@ -365,19 +365,19 @@ const loadTheme = (): boolean => {
   } catch (error) {
     console.error('Error loading theme from localStorage:', error);
   }
-  return true; // Default to dark theme
+      return true; // По умолчанию темная тема
 };
 
 const filteredTables = computed(() => {
   return tables.value.filter(table => selectedZones.value.includes(table.zone));
 });
 
-// Computed styles for scaling
+  // Вычисляемые стили для масштабирования
 const gridStyles = computed(() => ({
   '--horizontal-scale': horizontalScale.value,
   '--vertical-scale': verticalScale.value,
-  '--table-column-width': `${200 * horizontalScale.value}px`, // Base table width (16px steps)
-  '--time-slot-height': `${50 * verticalScale.value}px`,     // Base time slot height (4px steps)
+      '--table-column-width': `${200 * horizontalScale.value}px`, // Базовая ширина таблицы (шаг 16px)
+    '--time-slot-height': `${50 * verticalScale.value}px`,     // Базовая высота временного слота (шаг 4px)
 }));
 
 const timeSlots = computed(() => {
@@ -398,7 +398,7 @@ const timeSlots = computed(() => {
   return slots;
 });
 
-// Methods
+  // Методы
 const fetchReservationData = async (date: string) => {
   try {
     console.log(`Fetching data for date: ${date}`);
@@ -437,22 +437,22 @@ const handleSearch = async () => {
       reservationData.value = data;
     } catch (error) {
       console.error('Error searching reservations:', error);
-      // Fallback to current date data on search error
+      // Возврат к данным текущей даты при ошибке поиска
       fetchReservationData(selectedDate.value);
     }
   } else {
-    // If search is empty, fetch current date data
+    // Если поиск пустой, загружаем данные текущей даты
     fetchReservationData(selectedDate.value);
   }
 };
 
 const handleItemClick = (item: any) => {
-  // Select any item for deletion (orders, reservations, live queue)
+  // Выбор любого элемента для удаления (заказы, бронирования, живая очередь)
   if (selectedOrder.value && selectedOrder.value.id === item.id) {
-    // If clicking the same item, deselect it
+          // Если кликаем на тот же элемент, снимаем выделение
     selectedOrder.value = null;
   } else {
-    // Select the clicked item
+          // Выбираем кликнутый элемент
     selectedOrder.value = item;
   }
 };
@@ -461,22 +461,22 @@ const handleItemDelete = async (item: any) => {
   try {
     const itemType = item.type === 'order' ? 'заказ' : 'бронирование';
     
-    // Call appropriate API method based on item type
+    // Вызываем соответствующий API метод в зависимости от типа элемента
     if (item.type === 'order') {
       await reservationApi.deleteOrder(item.id);
     } else {
-      // For reservations and live queue, we'll use the same deleteOrder endpoint for now
-      // In a real application, you might have separate endpoints for different types
+      // Для бронирований и живой очереди используем тот же endpoint deleteOrder пока что
+      // В реальном приложении у вас могут быть отдельные endpoints для разных типов
       await reservationApi.deleteOrder(item.id);
     }
     
-    // Clear selection
+    // Очищаем выделение
     selectedOrder.value = null;
     
-    // Refresh the current date data to show the updated state
+    // Обновляем данные текущей даты для отображения измененного состояния
     await fetchReservationData(selectedDate.value);
     
-    // Show success message
+    // Показываем сообщение об успехе
     alert(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} успешно удален!`);
     
   } catch (error) {
@@ -487,9 +487,9 @@ const handleItemDelete = async (item: any) => {
   }
 };
 
-// Drag-to-create methods
+  // Методы перетаскивания для создания
 const handleMouseDown = (event: MouseEvent, table: Table, timeSlot: string) => {
-  if (event.button !== 0) return; // Only left mouse button
+  if (event.button !== 0) return; // Только левая кнопка мыши
   
   isDragging.value = true;
   dragData.value = {
@@ -504,10 +504,10 @@ const handleMouseDown = (event: MouseEvent, table: Table, timeSlot: string) => {
     isHorizontalDrag: false
   };
   
-  // Prevent text selection during drag
+      // Предотвращаем выделение текста во время перетаскивания
   event.preventDefault();
   
-  // Add global mouse event listeners
+      // Добавляем глобальные обработчики событий мыши
   document.addEventListener('mousemove', handleGlobalMouseMove);
   document.addEventListener('mouseup', handleGlobalMouseUp);
 };
@@ -515,12 +515,12 @@ const handleMouseDown = (event: MouseEvent, table: Table, timeSlot: string) => {
 const handleMouseEnter = (event: MouseEvent, table: Table, timeSlot: string) => {
   if (!isDragging.value || !dragData.value.table) return;
   
-  // Check if there are existing items in this cell - if so, stop the drag
+      // Проверяем, есть ли существующие элементы в этой ячейке - если да, останавливаем перетаскивание
   const existingItems = getItemsForTableAndTime(table, timeSlot);
   if (existingItems.length > 0) {
-    console.log('Drag stopped due to existing items in cell:', existingItems);
-    // Reset drag state
-    isDragging.value = false;
+          console.log('Drag stopped due to existing items in cell:', existingItems);
+      // Сбрасываем состояние перетаскивания
+      isDragging.value = false;
     dragData.value = {
       table: null,
       startTimeSlot: '',
@@ -533,13 +533,13 @@ const handleMouseEnter = (event: MouseEvent, table: Table, timeSlot: string) => 
       isHorizontalDrag: false
     };
     
-    // Remove global event listeners
+    // Убираем глобальные обработчики событий
     document.removeEventListener('mousemove', handleGlobalMouseMove);
     document.removeEventListener('mouseup', handleGlobalMouseUp);
     return;
   }
   
-  // Update current position
+  // Обновляем текущую позицию
   dragData.value.currentY = event.clientY;
   dragData.value.currentX = event.clientX;
   
@@ -554,7 +554,7 @@ const handleMouseEnter = (event: MouseEvent, table: Table, timeSlot: string) => 
     dragData.value.isHorizontalDrag = false;
   }
   
-  // Update selected tables based on current cursor position
+  // Обновляем выбранные столы на основе текущей позиции курсора
   if (dragData.value.isHorizontalDrag) {
     const startTableIndex = filteredTables.value.findIndex(t => t.id === dragData.value.table!.id);
     const currentTableIndex = filteredTables.value.findIndex(t => t.id === table.id);
@@ -563,11 +563,11 @@ const handleMouseEnter = (event: MouseEvent, table: Table, timeSlot: string) => 
       const minTableIndex = Math.min(startTableIndex, currentTableIndex);
       const maxTableIndex = Math.max(startTableIndex, currentTableIndex);
       
-      // Only include tables that are actually under the cursor path
+      // Включаем только столы, которые действительно находятся под путем курсора
       dragData.value.selectedTables = filteredTables.value.slice(minTableIndex, maxTableIndex + 1);
     }
   } else {
-    // For vertical drag, only select the starting table
+    // Для вертикального перетаскивания выбираем только начальный стол
     if (dragData.value.table) {
       dragData.value.selectedTables = [dragData.value.table];
     }
@@ -591,35 +591,35 @@ const handleGlobalMouseMove = (event: MouseEvent) => {
     dragData.value.isHorizontalDrag = false;
   }
   
-  // Always calculate time range based on vertical drag (time is vertical)
-  // Only allow dragging down (from top to bottom)
-  const timeSlotHeight = 50 * verticalScale.value; // Use CSS variable
+  // Всегда вычисляем временной диапазон на основе вертикального перетаскивания (время вертикально)
+  // Разрешаем перетаскивание только вниз (сверху вниз)
+  const timeSlotHeight = 50 * verticalScale.value; // Используем CSS переменную
   const dragDistance = event.clientY - dragData.value.startY;
   const timeSlotsDragged = Math.round(dragDistance / timeSlotHeight);
   
   const startIndex = timeSlots.value.indexOf(dragData.value.startTimeSlot);
   if (startIndex !== -1) {
-    // Only allow dragging down - endIndex should be >= startIndex
+    // Разрешаем перетаскивание только вниз - endIndex должен быть >= startIndex
     const endIndex = Math.max(startIndex, Math.min(timeSlots.value.length - 1, startIndex + timeSlotsDragged));
     dragData.value.endTimeSlot = timeSlots.value[endIndex];
   }
   
-  // Table selection is handled by handleMouseEnter based on cursor position
-  // No need to update selectedTables here
+  // Выбор столов обрабатывается handleMouseEnter на основе позиции курсора
+  // Нет необходимости обновлять selectedTables здесь
 };
 
 const handleGlobalMouseUp = () => {
   if (!isDragging.value) return;
   
-  // Calculate final time range
+  // Вычисляем финальный временной диапазон
   const startTime = dragData.value.startTimeSlot;
   const endTime = dragData.value.endTimeSlot;
   const hasTimeChange = startTime !== endTime;
   const hasTableChange = dragData.value.selectedTables.length > 1;
   
-  // Show modal if there are changes in time OR tables
+  // Показываем модальное окно, если есть изменения во времени ИЛИ столах
   if (hasTimeChange || hasTableChange) {
-    // Calculate duration
+          // Вычисляем продолжительность
     const startIndex = timeSlots.value.indexOf(startTime);
     const endIndex = timeSlots.value.indexOf(endTime);
     // Правильный расчет: разница между индексами * 30 минут
@@ -627,10 +627,10 @@ const handleGlobalMouseUp = () => {
     const durationHours = durationMinutes / 60;
 
     
-    // Calculate total capacity
+    // Вычисляем общую вместимость
     const totalCapacity = dragData.value.selectedTables.reduce((sum, table) => sum + table.capacity, 0);
     
-    // Prepare modal data
+    // Подготавливаем данные для модального окна
     newOrderData.value = {
       startTime,
       endTime,
@@ -643,12 +643,12 @@ const handleGlobalMouseUp = () => {
       status: 'New'
     };
     
-    // Show modal
+    // Показываем модальное окно
     showNewOrderModal.value = true;
   }
   
-  // Reset drag state
-  isDragging.value = false;
+      // Сбрасываем состояние перетаскивания
+    isDragging.value = false;
   dragData.value = {
     table: null,
     startTimeSlot: '',
@@ -661,13 +661,13 @@ const handleGlobalMouseUp = () => {
     isHorizontalDrag: false
   };
   
-  // Remove global event listeners
-  document.removeEventListener('mousemove', handleGlobalMouseMove);
-  document.removeEventListener('mouseup', handleGlobalMouseUp);
+      // Убираем глобальные обработчики событий
+    document.removeEventListener('mousemove', handleGlobalMouseMove);
+    document.removeEventListener('mouseup', handleGlobalMouseUp);
 };
 
 const handleMouseUp = () => {
-  // This will be handled by the global mouse up handler
+      // Это будет обработано глобальным обработчиком mouse up
 };
 
 const isInDragRange = (timeSlot: string) => {
@@ -679,7 +679,7 @@ const isInDragRange = (timeSlot: string) => {
   
   if (startIndex === -1 || endIndex === -1 || currentIndex === -1) return false;
   
-  // Since we only allow dragging down, startIndex should always be <= endIndex
+      // Поскольку мы разрешаем перетаскивание только вниз, startIndex всегда должен быть <= endIndex
   return currentIndex >= startIndex && currentIndex <= endIndex;
 };
 
@@ -687,10 +687,10 @@ const isTableSelected = (table: Table) => {
   return dragData.value.selectedTables.some(selectedTable => selectedTable.id === table.id);
 };
 
-// Modal methods
+  // Методы модального окна
 const closeNewOrderModal = () => {
   showNewOrderModal.value = false;
-  // Reset form data
+      // Сбрасываем данные формы
   newOrderData.value = {
     startTime: '',
     endTime: '',
@@ -721,7 +721,7 @@ const canCreateOrder = computed(() => {
 
 const createNewOrder = async () => {
   try {
-    // Create one order for all selected tables
+    // Создаем один заказ для всех выбранных столов
     const order = {
       start_time: `${selectedDate.value}T${newOrderData.value.startTime}:00+10:00`,
       end_time: `${selectedDate.value}T${newOrderData.value.endTime}:00+10:00`,
@@ -729,19 +729,19 @@ const createNewOrder = async () => {
       customer_phone: newOrderData.value.customerPhone,
       num_people: newOrderData.value.numPeople,
       status: newOrderData.value.status,
-      tables: newOrderData.value.selectedTables.map(t => t.id) // All selected tables in one order
+              tables: newOrderData.value.selectedTables.map(t => t.id) // Все выбранные столы в одном заказе
     };
     
-    // Send order to server
+          // Отправляем заказ на сервер
     const result = await reservationApi.createOrder(order);
     
-    // Close modal
+          // Закрываем модальное окно
     closeNewOrderModal();
     
-    // Refresh the current date data to show the new order
+          // Обновляем данные текущей даты для отображения нового заказа
     await fetchReservationData(selectedDate.value);
     
-    // Show success message
+    // Показываем сообщение об успехе
     const tableCount = newOrderData.value.selectedTables.length;
     const tableText = tableCount === 1 ? 'стол' : tableCount < 5 ? 'стола' : 'столов';
     alert(`Заказ успешно создан для ${tableCount} ${tableText}!`);
@@ -762,15 +762,15 @@ const toggleTheme = () => {
   document.documentElement.classList.toggle('light-theme', !isDarkTheme.value);
 };
 
-// Scale functions
+  // Функции масштабирования
 const increaseScale = () => {
-  horizontalScale.value = Math.min(horizontalScale.value + 0.08, 3); // Max 300% (16px step)
-  verticalScale.value = Math.min(verticalScale.value + 0.08, 3);     // Max 300% (4px step)
+      horizontalScale.value = Math.min(horizontalScale.value + 0.08, 3); // Максимум 300% (шаг 16px)
+    verticalScale.value = Math.min(verticalScale.value + 0.08, 3);     // Максимум 300% (шаг 4px)
 };
 
 const decreaseScale = () => {
-  horizontalScale.value = Math.max(horizontalScale.value - 0.08, 0.5); // Min 50% (16px step)
-  verticalScale.value = Math.max(verticalScale.value - 0.08, 0.5);     // Min 50% (4px step)
+      horizontalScale.value = Math.max(horizontalScale.value - 0.08, 0.5); // Минимум 50% (шаг 16px)
+    verticalScale.value = Math.max(verticalScale.value - 0.08, 0.5);     // Минимум 50% (шаг 4px)
 };
 
 const formatDate = (dateString: string) => {
@@ -814,15 +814,15 @@ const getMonthName = (month: number) => {
 
 
 
-// Helper function to extract time from ISO string without timezone issues
+// Вспомогательная функция для извлечения времени из ISO строки без проблем с часовым поясом
 const extractTimeFromISO = (isoString: string): string => {
-  // Extract time part from ISO string (HH:MM:SS)
+  // Извлекаем временную часть из ISO строки (ЧЧ:ММ:СС)
   const timeMatch = isoString.match(/T(\d{2}:\d{2}):\d{2}/);
   return timeMatch ? timeMatch[1] : '';
 };
 
 
-// Helper function to check if two time ranges overlap
+// Вспомогательная функция для проверки перекрытия двух временных диапазонов
 const doTimeRangesOverlap = (start1: string, end1: string, start2: string, end2: string): boolean => {
   const start1Minutes = parseInt(start1.split(':')[0]) * 60 + parseInt(start1.split(':')[1]);
   const end1Minutes = parseInt(end1.split(':')[0]) * 60 + parseInt(end1.split(':')[1]);
@@ -836,10 +836,10 @@ const getItemsForTableAndTime = (table: Table, timeSlot: string) => {
   const items: Array<any> = [];
   const seenIds = new Set();
   
-  // Collect all items (orders and reservations) for this table
+  // Собираем все элементы (заказы и бронирования) для этого стола
   const allItems: Array<any> = [];
   
-  // Add orders
+  // Добавляем заказы
   table.orders.forEach(order => {
     const startTime = extractTimeFromISO(order.start_time || '');
     const endTime = extractTimeFromISO(order.end_time || '');
@@ -852,7 +852,7 @@ const getItemsForTableAndTime = (table: Table, timeSlot: string) => {
     });
   });
   
-  // Add reservations
+  // Добавляем бронирования
   table.reservations.forEach(reservation => {
     const startTime = extractTimeFromISO(reservation.seating_time || '');
     const endTime = extractTimeFromISO(reservation.end_time || '');
@@ -865,34 +865,34 @@ const getItemsForTableAndTime = (table: Table, timeSlot: string) => {
     });
   });
   
-  // Calculate overlap indices for ALL items first (global calculation)
+  // Вычисляем индексы перекрытий для ВСЕХ элементов сначала (глобальный расчет)
   const itemsWithOverlap = allItems.map(item => {
-    // Find all items that overlap with this one (any type)
+          // Находим все элементы, которые перекрываются с этим (любого типа)
     const overlappingItems = allItems.filter(otherItem => {
       if (otherItem.id === item.id && otherItem.type === item.type) {
-        return false; // Skip self
+        return false; // Пропускаем себя
       }
       return doTimeRangesOverlap(item.startTime, item.endTime, otherItem.startTime, otherItem.endTime);
     });
     
-    // Assign overlap index based on priority and position
+          // Назначаем индекс перекрытия на основе приоритета и позиции
     let overlapIndex = 0;
     if (overlappingItems.length > 0) {
-      // Sort overlapping items by start time first, then by type priority
+              // Сортируем перекрывающиеся элементы сначала по времени начала, затем по приоритету типа
       const allOverlapping = [item, ...overlappingItems].sort((a, b) => {
-        // First sort by start time (earlier items get lower overlapIndex)
+                  // Сначала сортируем по времени начала (ранние элементы получают меньший overlapIndex)
         const aMinutes = parseInt(a.startTime.split(':')[0]) * 60 + parseInt(a.startTime.split(':')[1]);
         const bMinutes = parseInt(b.startTime.split(':')[0]) * 60 + parseInt(b.startTime.split(':')[1]);
         if (aMinutes !== bMinutes) {
           return aMinutes - bMinutes;
         }
         
-        // If start times are equal, then use type priority: orders > live queue > other reservations
+                  // Если времена начала равны, используем приоритет типа: заказы > живая очередь > другие бронирования
         if (a.type !== b.type) {
           if (a.type === 'order') return -1;
           if (b.type === 'order') return 1;
         }
-        // Within reservations, live queue has priority
+                  // Среди бронирований живая очередь имеет приоритет
         if (a.type === 'reservation' && b.type === 'reservation') {
           if (a.status === 'Reservation' && b.status !== 'Reservation') return -1;
           if (a.status !== 'Reservation' && b.status === 'Reservation') return 1;
@@ -900,7 +900,7 @@ const getItemsForTableAndTime = (table: Table, timeSlot: string) => {
         return 0;
       });
       
-      // Find position of current item in sorted overlapping group
+              // Находим позицию текущего элемента в отсортированной перекрывающейся группе
       overlapIndex = allOverlapping.findIndex(overlappingItem => 
         overlappingItem.id === item.id && overlappingItem.type === item.type
       );
@@ -912,14 +912,14 @@ const getItemsForTableAndTime = (table: Table, timeSlot: string) => {
     };
   });
   
-  // Filter items that should be displayed in this time slot
+  // Фильтруем элементы, которые должны отображаться в этом временном слоте
   itemsWithOverlap.forEach(item => {
     const itemKey = `${item.id}-${item.type}`;
     
     if (!seenIds.has(itemKey)) {
       seenIds.add(itemKey);
       
-      // Check if this item should be shown in this time slot
+      // Проверяем, должен ли этот элемент отображаться в этом временном слоте
       let shouldShow = false;
       
       if (item.type === 'order') {
@@ -941,7 +941,7 @@ const getItemsForTableAndTime = (table: Table, timeSlot: string) => {
 
 
 
-// Lifecycle
+  // Жизненный цикл
 onMounted(() => {
   // Загружаем сохраненные зоны
   selectedZones.value = loadSelectedZones();

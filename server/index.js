@@ -7,11 +7,11 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+// Middleware для CORS и JSON
 app.use(cors());
 app.use(express.json());
 
-// Mock data for reservations
+// Моковые данные для бронирований
 const mockRestaurant = {
   id: 11100,
   timezone: 'Asia/Vladivostok',
@@ -20,28 +20,28 @@ const mockRestaurant = {
   closing_time: '23:40'
 };
 
-// Sample data arrays (kept for potential future use)
+// Массивы примеров данных (сохранены для потенциального будущего использования)
 const orderStatuses = ['New', 'Bill', 'Closed', 'Banquet'];
 
-// In-memory database for storing all items (orders and reservations)
+// База данных в памяти для хранения всех элементов (заказы и бронирования)
 const database = {
   orders: new Map(), // Map<date, Map<itemId, item>>
   nextOrderId: 1
 };
 
-// File paths for persistent storage
+// Пути к файлам для постоянного хранения
 const DATA_DIR = path.join(__dirname, 'data');
 const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
 
-// Ensure data directory exists
+// Убеждаемся, что директория данных существует
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-// Save database to files
+// Сохраняем базу данных в файлы
 const saveDatabase = () => {
   try {
-    // Convert Maps to plain objects for JSON serialization
+          // Преобразуем Maps в простые объекты для JSON сериализации
     const ordersData = {};
     database.orders.forEach((dateOrders, date) => {
       ordersData[date] = {};
@@ -50,7 +50,7 @@ const saveDatabase = () => {
       });
     });
 
-    // Save to file
+          // Сохраняем в файл
     fs.writeFileSync(ORDERS_FILE, JSON.stringify(ordersData, null, 2));
     
     console.log('Database saved to files successfully');
@@ -59,10 +59,10 @@ const saveDatabase = () => {
   }
 };
 
-// Load database from files
+// Загружаем базу данных из файлов
 const loadDatabase = () => {
   try {
-    // Load all items (orders and reservations)
+          // Загружаем все элементы (заказы и бронирования)
     if (fs.existsSync(ORDERS_FILE)) {
       const ordersData = JSON.parse(fs.readFileSync(ORDERS_FILE, 'utf8'));
       database.orders.clear();
@@ -80,20 +80,20 @@ const loadDatabase = () => {
   }
 };
 
-// Initialize database with sample data for today
+// Инициализируем базу данных примерами данных для сегодня
 const initializeDatabase = () => {
-  // First, try to load existing data from files
+  // Сначала пытаемся загрузить существующие данные из файлов
   loadDatabase();
   
   const today = new Date().toISOString().split('T')[0];
   
-      // If no data exists for today, create sample data
+      // Если данных для сегодня нет, создаем примеры данных
     if (!database.orders.has(today) || database.orders.get(today).size === 0) {
       console.log('No existing data found, creating sample data for today...');
       
-      // Sample items for today (orders and reservations combined)
+              // Примеры элементов для сегодня (заказы и бронирования объединены)
       const sampleItems = [
-        // Orders
+                  // Заказы
         { id: '29-1', status: 'New', start: '12:00', end: '19:00', customer_phone: '+79991234567', num_people: 4, customer_name: 'Иван', table_id: '10' },
         { id: '29-2', status: 'Bill', start: '13:00', end: '14:00', customer_phone: '+79998889900', num_people: 2, customer_name: 'Мария', table_id: '10' },
         { id: '29-3', status: 'Closed', start: '15:00', end: '17:00', customer_phone: '+79991112233', num_people: 3, customer_name: 'Петр', table_id: '10' },
@@ -112,7 +112,7 @@ const initializeDatabase = () => {
         { id: '30-1', status: 'Bill', start: '18:00', end: '20:00', customer_phone: '+79998889900', num_people: 2, customer_name: 'Игорь', table_id: '11' },
         { id: '191-1', status: 'Banquet', start: '19:00', end: '23:00', customer_phone: '+79991112233', num_people: 3, customer_name: 'Екатерина', table_id: '12' },
         
-        // Reservations (now with status Reservation or LiveQueue)
+                  // Бронирования (теперь со статусом Reservation или LiveQueue)
         { id: '5-res-1', status: 'Reservation', start: '13:00', end: '15:00', customer_phone: '+79991234567', num_people: 4, customer_name: 'Анна', table_id: '1' },
         { id: '5-res-2', status: 'Reservation', start: '20:00', end: '22:00', customer_phone: '+79998889900', num_people: 2, customer_name: 'Сергей', table_id: '1' },
         { id: '6-res-1', status: 'Reservation', start: '14:00', end: '16:00', customer_phone: '+79991112233', num_people: 3, customer_name: 'Мария', table_id: '2' },
@@ -129,26 +129,26 @@ const initializeDatabase = () => {
         { id: '191-res-1', status: 'Reservation', start: '20:00', end: '23:00', customer_phone: '+79997776665', num_people: 10, customer_name: 'Екатерина', table_id: '12' }
       ];
 
-      // Store all items in database
+              // Сохраняем все элементы в базе данных
       database.orders.set(today, new Map());
       
       sampleItems.forEach(item => {
         database.orders.get(today).set(item.id, item);
       });
       
-      // Save sample data to files
+              // Сохраняем примеры данных в файлы
       saveDatabase();
     } else {
       console.log('Existing data loaded from files');
     }
 };
 
-// Initialize database on server start
+// Инициализируем базу данных при запуске сервера
 initializeDatabase();
 
-// Hardcoded data removed - now using database
+// Хардкод данные удалены - теперь используем базу данных
 
-// POST /api/orders - Create a new order
+// POST /api/orders - Создать новый заказ
 app.post('/api/orders', (req, res) => {
   try {
     const { 
@@ -161,28 +161,28 @@ app.post('/api/orders', (req, res) => {
       tables 
     } = req.body;
     
-    // Validate required fields
+    // Проверяем обязательные поля
     if (!start_time || !end_time || !customer_name || !customer_phone || !num_people || !tables) {
       return res.status(400).json({ 
         error: 'Missing required fields: start_time, end_time, customer_name, customer_phone, num_people, tables' 
       });
     }
     
-    // Extract date from start_time for storage
+    // Извлекаем дату из start_time для хранения
     const orderDate = start_time.split('T')[0];
     
-    // Create orders for each selected table
+    // Создаем заказы для каждого выбранного стола
     const createdOrders = [];
     
     tables.forEach(tableId => {
-      // Generate a unique ID for the new order
+      // Генерируем уникальный ID для нового заказа
       const orderId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
-      // Extract time from ISO string
+              // Извлекаем время из ISO строки
       const startTime = start_time.match(/T(\d{2}:\d{2}):\d{2}/)?.[1] || '00:00';
       const endTime = end_time.match(/T(\d{2}:\d{2}):\d{2}/)?.[1] || '00:00';
       
-      // Create the new order object
+              // Создаем объект нового заказа
       const newOrder = {
         id: orderId,
         status: status || 'New',
@@ -194,7 +194,7 @@ app.post('/api/orders', (req, res) => {
         table_id: tableId
       };
       
-      // Store the new order in database
+              // Сохраняем новый заказ в базе данных
       if (!database.orders.has(orderDate)) {
         database.orders.set(orderDate, new Map());
       }
@@ -203,7 +203,7 @@ app.post('/api/orders', (req, res) => {
       createdOrders.push(newOrder);
     });
     
-    // Save database to files after creating orders
+    // Сохраняем базу данных в файлы после создания заказов
     saveDatabase();
     
     console.log('Created new orders:', createdOrders);
@@ -220,7 +220,7 @@ app.post('/api/orders', (req, res) => {
   }
 });
 
-// DELETE /api/orders/:id - Delete an order
+// DELETE /api/orders/:id - Удалить заказ
 app.delete('/api/orders/:id', (req, res) => {
   try {
     const { id } = req.params;
@@ -231,7 +231,7 @@ app.delete('/api/orders/:id', (req, res) => {
     
     let orderDeleted = false;
     
-    // Search for the item in database
+    // Ищем элемент в базе данных
     for (const [date, dateItems] of database.orders) {
       if (dateItems.has(id)) {
         dateItems.delete(id);
@@ -245,7 +245,7 @@ app.delete('/api/orders/:id', (req, res) => {
       return res.status(404).json({ error: 'Order or reservation not found' });
     }
     
-    // Save database to files after deleting
+    // Сохраняем базу данных в файлы после удаления
     saveDatabase();
     
     res.json({
@@ -260,7 +260,7 @@ app.delete('/api/orders/:id', (req, res) => {
 });
 
 const generateMockTables = (date) => {
-  // Base tables configuration
+  // Базовая конфигурация столов
   const baseTables = [
     { id: '1', capacity: 2, number: '5', zone: '1 этаж' },
     { id: '2', capacity: 2, number: '6', zone: '1 этаж' },
@@ -278,7 +278,7 @@ const generateMockTables = (date) => {
 
   return baseTables.map((table) => {
     
-    // Get all items (orders and reservations) from database for this table and date
+    // Получаем все элементы (заказы и бронирования) из базы данных для этого стола и даты
     const orders = [];
     const reservations = [];
     
@@ -286,9 +286,9 @@ const generateMockTables = (date) => {
       const dateItems = database.orders.get(date);
       dateItems.forEach((item, itemId) => {
         if (item.table_id === table.id) {
-          // Determine if it's an order or reservation based on status
+          // Определяем, это заказ или бронирование на основе статуса
           if (item.status === 'Reservation') {
-            // This is a reservation
+                          // Это бронирование
             reservations.push({
               id: item.id,
               name_for_reservation: item.customer_name,
@@ -298,8 +298,8 @@ const generateMockTables = (date) => {
               seating_time: `${date}T${item.start}:00+10:00`,
               end_time: `${date}T${item.end}:00+10:00`
             });
-          } else {
-            // This is an order (including LiveQueue)
+                      } else {
+              // Это заказ (включая LiveQueue)
             orders.push({
               id: item.id,
               status: item.status,
@@ -335,14 +335,14 @@ const generateAvailableDays = () => {
   return days;
 };
 
-// Routes
+// Маршруты
 
-// GET /api/reservations/:date - Get reservations for a specific date
+// GET /api/reservations/:date - Получить бронирования для конкретной даты
 app.get('/api/reservations/:date', (req, res) => {
   try {
     const { date } = req.params;
     
-    // Validate date format
+    // Проверяем формат даты
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD' });
     }
@@ -361,7 +361,7 @@ app.get('/api/reservations/:date', (req, res) => {
   }
 });
 
-// GET /api/reservations/search/:query - Search reservations by name
+// GET /api/reservations/search/:query - Поиск бронирований по имени
 app.get('/api/reservations/search/:query', (req, res) => {
   try {
     const { query } = req.params;
@@ -370,11 +370,11 @@ app.get('/api/reservations/search/:query', (req, res) => {
       return res.status(400).json({ error: 'Search query is required' });
     }
     
-    // Generate mock data for today
+    // Генерируем моковые данные для сегодня
     const today = new Date().toISOString().split('T')[0];
     const allTables = generateMockTables(today);
     
-    // Filter tables that have reservations/orders matching the search query
+    // Фильтруем столы, у которых есть бронирования/заказы, соответствующие поисковому запросу
     const filteredTables = allTables.filter(table => {
       const hasMatchingReservation = table.reservations.some(reservation => 
         reservation.name_for_reservation.toLowerCase().includes(query.toLowerCase())
@@ -401,7 +401,7 @@ app.get('/api/reservations/search/:query', (req, res) => {
   }
 });
 
-// GET /api/restaurant - Get restaurant information
+// GET /api/restaurant - Получить информацию о ресторане
 app.get('/api/restaurant', (req, res) => {
   try {
     res.json(mockRestaurant);
@@ -411,7 +411,7 @@ app.get('/api/restaurant', (req, res) => {
   }
 });
 
-// GET /api/orders - Get all orders for a specific date
+// GET /api/orders - Получить все заказы для конкретной даты
 app.get('/api/orders/:date', (req, res) => {
   try {
     const { date } = req.params;
@@ -433,7 +433,7 @@ app.get('/api/orders/:date', (req, res) => {
   }
 });
 
-// GET /api/reservations/:date - Get all items for a specific date (orders and reservations combined)
+// GET /api/reservations/:date - Получить все элементы для конкретной даты (заказы и бронирования объединены)
 app.get('/api/reservations/:date', (req, res) => {
   try {
     const { date } = req.params;
@@ -444,7 +444,7 @@ app.get('/api/reservations/:date', (req, res) => {
     
     const allItems = database.orders.has(date) ? Array.from(database.orders.get(date).values()) : [];
     
-    // Separate orders and reservations
+    // Разделяем заказы и бронирования
     const orders = allItems.filter(item => !['Reservation', 'LiveQueue'].includes(item.status));
     const reservations = allItems.filter(item => ['Reservation', 'LiveQueue'].includes(item.status));
     
@@ -460,7 +460,7 @@ app.get('/api/reservations/:date', (req, res) => {
   }
 });
 
-// GET /api/available-days - Get available days
+// GET /api/available-days - Получить доступные дни
 app.get('/api/available-days', (req, res) => {
   try {
     res.json(generateAvailableDays());
@@ -471,14 +471,14 @@ app.get('/api/available-days', (req, res) => {
 });
 
 
-// Start server
+// Запускаем сервер
 const server = app.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT}`);
   console.log(`📅 API available at http://localhost:${PORT}/api`);
   console.log(`💾 Data will be saved to: ${DATA_DIR}`);
 });
 
-// Graceful shutdown - save data before exiting
+// Graceful shutdown - сохраняем данные перед выходом
 process.on('SIGINT', () => {
   console.log('\n🔄 Shutting down gracefully...');
   saveDatabase();
