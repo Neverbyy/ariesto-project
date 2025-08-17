@@ -11,7 +11,7 @@
           <input 
             v-model="searchQuery"
             type="text" 
-            placeholder="Q +Л поиск по имени"
+            placeholder="Поиск заказов"
             @keyup.enter="handleSearch"
           />
         </div>
@@ -462,8 +462,6 @@ const handleItemDelete = async (item: any) => {
     const itemType = item.type === 'order' ? 'заказ' : 
                      item.status === 'Живая очередь' ? 'запись из живой очереди' : 'бронирование';
     
-    console.log(`Deleting ${itemType}:`, item);
-    
     // Call appropriate API method based on item type
     if (item.type === 'order') {
       await reservationApi.deleteOrder(item.id);
@@ -629,16 +627,7 @@ const handleGlobalMouseUp = () => {
     // Правильный расчет: разница между индексами * 30 минут
     const durationMinutes = (endIndex - startIndex) * 30;
     const durationHours = durationMinutes / 60;
-    
-    // Отладочная информация для проверки расчета
-    console.log('Duration calculation:', {
-      startTime,
-      endTime,
-      startIndex,
-      endIndex,
-      durationMinutes,
-      durationHours
-    });
+
     
     // Calculate total capacity
     const totalCapacity = dragData.value.selectedTables.reduce((sum, table) => sum + table.capacity, 0);
@@ -747,7 +736,6 @@ const createNewOrder = async () => {
     
     // Send order to server
     const result = await reservationApi.createOrder(order);
-    console.log('Order created successfully:', result);
     
     // Close modal
     closeNewOrderModal();
@@ -1478,12 +1466,25 @@ text-align: left;
   border: 1px solid var(--border-color);
 }
 
+/* Улучшенные стили для светлой темы */
+:global(.light-theme) .modal-content {
+  background-color: #ffffff;
+  border: 2px solid #e5e7eb;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 1.5rem 1rem;
   border-bottom: 1px solid var(--border-color);
+}
+
+/* Улучшенные стили для светлой темы */
+:global(.light-theme) .modal-header {
+  background-color: #f8fafc;
+  border-bottom: 2px solid #e2e8f0;
 }
 
 .modal-header h3 {
@@ -1513,11 +1514,22 @@ text-align: left;
   padding: 1.5rem;
 }
 
+/* Улучшенные стили для светлой темы */
+:global(.light-theme) .modal-body {
+  background-color: #ffffff;
+}
+
 .order-details {
   background-color: var(--bg-secondary);
   border-radius: 8px;
   padding: 1rem;
   margin-bottom: 1.5rem;
+}
+
+/* Улучшенные стили для светлой темы */
+:global(.light-theme) .order-details {
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
 }
 
 .detail-row {
@@ -1564,6 +1576,20 @@ text-align: left;
   transition: border-color 0.2s ease;
 }
 
+/* Улучшенные стили для светлой темы */
+:global(.light-theme) .form-input,
+:global(.light-theme) .form-select {
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  color: #374151;
+}
+
+:global(.light-theme) .form-input:focus,
+:global(.light-theme) .form-select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
 .form-input:focus,
 .form-select:focus {
   outline: none;
@@ -1581,6 +1607,12 @@ text-align: left;
   justify-content: flex-end;
   padding: 1rem 1.5rem 1.5rem;
   border-top: 1px solid var(--border-color);
+}
+
+/* Улучшенные стили для светлой темы */
+:global(.light-theme) .modal-footer {
+  background-color: #f8fafc;
+  border-top: 2px solid #e2e8f0;
 }
 
 .btn {

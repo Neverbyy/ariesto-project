@@ -14,8 +14,12 @@
         <div class="status-badge">{{ orderStatusText }}</div>
         <div class="time-display">{{ orderTimeText }}</div>
         <div class="hover-extra compact" v-if="shouldShowExtraInfo">
+          <div class="customer-info" v-if="(orderCustomerName && shouldShowCustomerName) || (orderPeopleText && shouldShowPeople)">
+            <span v-if="orderCustomerName && shouldShowCustomerName">{{ orderCustomerName }}</span>
+            <span v-if="orderCustomerName && shouldShowCustomerName && orderPeopleText && shouldShowPeople">; </span>
+            <span v-if="orderPeopleText && shouldShowPeople">{{ orderPeopleText }}</span>
+          </div>
           <div class="phone-text" v-if="orderPhoneSuffix && shouldShowPhone">📞 {{ orderPhoneSuffix }}</div>
-          <div class="people-text" v-if="orderPeopleText && shouldShowPeople">{{ orderPeopleText }}</div>
         </div>
       </template>
       
@@ -197,7 +201,7 @@ const orderStatusText = computed(() => {
     'Closed': 'Закрытый',
     'Banquet': 'Банкет',
     'Reservation': 'Бронирование',
-    'LiveQueue': 'Очередь'
+    'LiveQueue': 'Живая очередь'
   };
   return statusMap[props.item.status] || props.item.status;
 });
@@ -213,6 +217,7 @@ const reservationPeopleText = computed(() => props.item.type === 'reservation' ?
 const phoneSuffix = computed(() => props.item.type === 'reservation' ? String(props.item.phone_number).slice(-4) : '');
 
 // Для заказов
+const orderCustomerName = computed(() => props.item.type === 'order' && props.item.customer_name ? props.item.customer_name : '');
 const orderPhoneSuffix = computed(() => props.item.type === 'order' && props.item.customer_phone ? String(props.item.customer_phone).slice(-4) : '');
 const orderPeopleText = computed(() => props.item.type === 'order' && props.item.num_people ? `${props.item.num_people} чел` : '');
 
@@ -231,6 +236,21 @@ const shouldShowExtraInfo = computed(() => {
   
   // Если высота меньше 60px, показываем только основную информацию
   return heightValue >= 60;
+});
+
+const shouldShowCustomerName = computed(() => {
+  if (props.item.type !== 'order') return false;
+  
+  // При максимальном отдалении масштаба (verticalScale = 0.5), скрываем имя клиента
+  if (props.verticalScale <= 0.5) {
+    return false;
+  }
+  
+  const itemHeight = itemStyle.value.height;
+  const heightValue = parseInt(String(itemHeight));
+  
+  // Имя клиента показываем только если высота позволяет
+  return heightValue >= 75;
 });
 
 const shouldShowPhone = computed(() => {
@@ -414,9 +434,9 @@ const handleDelete = () => {
 }
 
 .hover-extra { 
-  display: flex; 
+  display: flex;
+  flex-direction: column;
   gap: 8px; 
-  align-items: center; 
   margin-top: 2px;
 }
 
@@ -425,7 +445,7 @@ const handleDelete = () => {
   margin-top: 1px;
 }
 
-.people-text, .phone-text { 
+.customer-info, .people-text, .phone-text { 
   white-space: nowrap; 
   overflow: hidden; 
   text-overflow: ellipsis; 
@@ -434,6 +454,7 @@ const handleDelete = () => {
   margin: 0; 
 }
 
+.hover-extra.compact .customer-info,
 .hover-extra.compact .people-text,
 .hover-extra.compact .phone-text {
   font-size: 0.7rem;
