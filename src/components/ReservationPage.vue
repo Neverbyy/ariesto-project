@@ -222,6 +222,8 @@
               <option value="Bill">Счет</option>
               <option value="Closed">Закрыт</option>
               <option value="Banquet">Банкет</option>
+              <option value="Reservation">Бронирование</option>
+              <option value="LiveQueue">Очередь</option>
             </select>
           </div>
         </div>
@@ -492,9 +494,6 @@ const handleItemDelete = async (item: any) => {
 // Drag-to-create methods
 const handleMouseDown = (event: MouseEvent, table: Table, timeSlot: string) => {
   if (event.button !== 0) return; // Only left mouse button
-  
-  // Check if there are existing items in this cell
-  const existingItems = getItemsForTableAndTime(table, timeSlot);
   
   isDragging.value = true;
   dragData.value = {
@@ -836,10 +835,6 @@ const extractTimeFromISO = (isoString: string): string => {
   return timeMatch ? timeMatch[1] : '';
 };
 
-// Debug function to log table data only once
-const logTableData = (table: Table) => {
-  
-};
 
 // Helper function to check if two time ranges overlap
 const doTimeRangesOverlap = (start1: string, end1: string, start2: string, end2: string): boolean => {

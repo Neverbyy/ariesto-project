@@ -93,6 +93,8 @@ onUnmounted(() => {
 const itemClass = computed(() => {
   if (props.item.type === 'order') {
     if (props.item.status === 'Banquet') return 'order-banquet';
+    if (props.item.status === 'Reservation') return 'order-reservation';
+    if (props.item.status === 'LiveQueue') return 'order-live-queue';
     // New, Bill, Closed → обычные заказы
     return 'order-regular';
   }
@@ -158,9 +160,11 @@ const itemStyle = computed(() => {
     }
   }
   
+  // Исправляем расчет высоты: добавляем 1 ячейку (50px) для корректного отображения
+  // Это компенсирует то, что карточка должна занимать полную высоту от начала до конца времени
   const itemHeight = Math.max(
     minHeight, // Минимальная высота (адаптивная)
-    (duration / 30) * 50 * verticalScale // Высота по продолжительности
+    ((duration / 30) * 50 + 50) * verticalScale // Высота по продолжительности + 1 ячейка
   );
   
   const overlapOffset = (props.item.overlapIndex || 0) * 10 * horizontalScale;
@@ -191,7 +195,9 @@ const orderStatusText = computed(() => {
     'New': 'Новый',
     'Bill': 'Пречек',
     'Closed': 'Закрытый',
-    'Banquet': 'Банкет'
+    'Banquet': 'Банкет',
+    'Reservation': 'Бронирование',
+    'LiveQueue': 'Очередь'
   };
   return statusMap[props.item.status] || props.item.status;
 });
@@ -337,32 +343,31 @@ const handleDelete = () => {
 }
 
 .delete-button {
-  position: absolute;
-  right: -35px;
-  top: 50%;
-  transform: translateY(-50%);
-  background-color: #ef4444;
-  color: white;
-  border: 2px solid #dc2626;
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: bold;
-  transition: all 0.2s ease;
-  z-index: 2000;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  position: absolute !important;
+  right: 8px !important;
+  top: 8px !important;
+  background-color: #ef4444 !important;
+  color: white !important;
+  border: 2px solid #dc2626 !important;
+  border-radius: 50% !important;
+  width: 20px !important;
+  height: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  font-size: 12px !important;
+  font-weight: bold !important;
+  transition: all 0.2s ease !important;
+  z-index: 9999 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
 }
 
 .delete-button:hover {
-  background-color: #dc2626;
-  border-color: #b91c1c;
-  transform: translateY(-50%) scale(1.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  background-color: #dc2626 !important;
+  border-color: #b91c1c !important;
+  transform: scale(1.1) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
 }
 
 .item-content {
@@ -530,6 +535,18 @@ const handleDelete = () => {
 .order-banquet { 
   background-color: color-mix(in srgb, var(--card-order-banquet) 15%, transparent); 
   border-left: 3px solid var(--card-order-banquet); 
+}
+
+/* Бронирование (заказ) */
+.order-reservation { 
+  background-color: color-mix(in srgb, var(--card-reservation-regular) 15%, transparent); 
+  border-left: 3px solid var(--card-reservation-regular); 
+}
+
+/* Живая очередь (заказ) */
+.order-live-queue { 
+  background-color: color-mix(in srgb, var(--card-reservation-live) 15%, transparent); 
+  border-left: 3px solid var(--card-reservation-live); 
 }
 
 /* Живая очередь */
