@@ -132,14 +132,36 @@ const itemStyle = computed(() => {
     const [slotHours, slotMinutes] = timeSlotTime.split(':').map(Number);
     const slotTotalMinutes = slotHours * 60 + slotMinutes;
     
-    const { horizontalScale, verticalScale } = scale.value;
+    // Используем props.verticalScale напрямую вместо scale.value
+    const verticalScale = props.verticalScale;
+    const horizontalScale = 1; // Пока используем фиксированное значение
     
+    // Отладочная информация для диагностики
+    if (props.item.type === 'order' && duration > 30) {
+      console.log(`Order ${props.item.id}: duration=${duration}min, verticalScale=${verticalScale}, timeSlot=${timeSlotTime}`);
+    }
+    
+    // Правильный расчет смещения сверху
+    // Если время начала заказа больше времени текущего слота,
+    // то нужно сместить карточку вниз на соответствующее количество ячеек
     const topOffset = startTotalMinutes > slotTotalMinutes 
-      ? ((startTotalMinutes - slotTotalMinutes) / 30) * 50 * verticalScale
+      ? Math.floor((startTotalMinutes - slotTotalMinutes) / 30) * 50 * verticalScale
       : 0;
     
-    // Упрощенный расчет высоты
-    const itemHeight = Math.max(50 * verticalScale, ((duration / 30) * 50 + 50) * verticalScale);
+    // Правильный расчет высоты с учетом масштаба
+    // Базовая высота одной ячейки времени (30 минут) = 50px
+    // При масштабе verticalScale каждая ячейка имеет высоту 50 * verticalScale
+    const baseTimeSlotHeight = 50 * verticalScale;
+
+    const timeSlotsCount = Math.max(1, Math.ceil((duration + 1) / 30));
+    
+    // Высота карточки = количество слотов * высота слота
+    const itemHeight = timeSlotsCount * baseTimeSlotHeight;
+    
+    // Отладочная информация для диагностики
+    if (props.item.type === 'order' && duration > 30) {
+      console.log(`Order ${props.item.id}: duration=${duration}min, timeSlots=${timeSlotsCount}, height=${itemHeight}px, scale=${verticalScale}, baseHeight=${baseTimeSlotHeight}`);
+    }
     
     const overlapOffset = (props.item.overlapIndex || 0) * 10 * horizontalScale;
     const baseZ = 10 + startTotalMinutes + (props.item.overlapIndex || 0);
@@ -594,6 +616,113 @@ const handleDelete = () => {
   background-color: color-mix(in srgb, var(--card-reservation-regular) 35%, transparent); 
   border-left: 5px solid var(--card-reservation-regular); 
   box-shadow: 0 2px 8px rgba(5, 150, 105, 0.15);
+}
+
+/* Mobile Responsive Styles for screens <= 460px */
+@media (max-width: 460px) {
+  .reservation-item {
+    font-size: 10px;
+    padding: 0.25rem;
+    min-height: 35px;
+    border-left-width: 3px;
+  }
+
+  .reservation-item .item-content {
+    gap: 0.25rem;
+    padding: 0.25rem;
+  }
+
+  .reservation-item .item-title {
+    font-size: 0.75rem;
+    line-height: 1.1;
+    margin: 0;
+  }
+
+  .reservation-item .status-badge {
+    font-size: 0.6rem;
+    padding: 0.1rem 0.2rem;
+    margin: 0;
+  }
+
+  .reservation-item .time-display {
+    font-size: 0.7rem;
+    line-height: 1;
+    margin: 0;
+  }
+
+  .reservation-item .hover-extra {
+    gap: 0.2rem;
+    margin-top: 0.1rem;
+  }
+
+  .reservation-item .customer-info,
+  .reservation-item .people-text,
+  .reservation-item .phone-text {
+    font-size: 0.65rem;
+    line-height: 1.1;
+  }
+
+  /* Уменьшаем размеры для коротких заказов на мобильных */
+  .reservation-item[data-duration="short"] .item-content {
+    justify-content: space-between;
+    padding: 0.1rem 0;
+  }
+
+  .reservation-item[data-duration="short"] .item-title {
+    font-size: 0.7rem;
+  }
+
+  .reservation-item[data-duration="short"] .status-badge {
+    font-size: 0.55rem;
+    padding: 0.05rem 0.15rem;
+  }
+
+  .reservation-item[data-duration="short"] .time-display {
+    font-size: 0.65rem;
+  }
+
+  /* Адаптация для максимального отдаления на мобильных */
+  .reservation-item[data-scale="0.5"] .item-title {
+    font-size: 0.7rem;
+  }
+
+  .reservation-item[data-scale="0.5"] .status-badge {
+    font-size: 0.55rem;
+    padding: 0.05rem 0.15rem;
+  }
+
+  .reservation-item[data-scale="0.5"] .time-display {
+    font-size: 0.65rem;
+  }
+
+  /* Комбинированные стили для максимального отдаления + коротких заказов на мобильных */
+  .reservation-item[data-scale="0.5"][data-duration="short"] .item-content {
+    justify-content: space-between;
+    padding: 0.05rem 0;
+  }
+
+  .reservation-item[data-scale="0.5"][data-duration="short"] .item-title {
+    font-size: 0.65rem;
+  }
+
+  .reservation-item[data-scale="0.5"][data-duration="short"] .status-badge {
+    font-size: 0.5rem;
+    padding: 0.02rem 0.1rem;
+  }
+
+  .reservation-item[data-scale="0.5"][data-duration="short"] .time-display {
+    font-size: 0.6rem;
+  }
+
+  /* Адаптация delete button для мобильных */
+  .delete-button {
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+    right: 1px;
+    top: 1px;
+    border-radius: 50%;
+  }
 }
 
 </style>

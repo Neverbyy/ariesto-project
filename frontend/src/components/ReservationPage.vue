@@ -240,14 +240,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import type { ReservationData, Table, ZoneType, TableItem } from '../types/reservation';
+import type { ReservationData, Table, TableItem } from '../types/reservation';
 import { reservationApi } from '../services/api';
 import ReservationItem from './ReservationItem.vue';
 
   // Реактивные данные
 const reservationData = ref<ReservationData | null>(null);
 const selectedDate = ref<string>('');
-const selectedZones = ref<ZoneType[]>([]);
+const selectedZones = ref<string[]>([]);
 const searchQuery = ref<string>('');
 
   // Состояние масштаба
@@ -321,10 +321,10 @@ const availableDays = computed(() => {
 });
 const tables = computed(() => reservationData.value?.tables || []);
 
-const zones: ZoneType[] = ['1 этаж', '2 этаж', 'Банкетный зал'];
+const zones: string[] = ['1 этаж', '2 этаж', 'Банкетный зал'];
 
 // Функции для работы с localStorage
-const saveSelectedZones = (zones: ZoneType[]) => {
+const saveSelectedZones = (zones: string[]) => {
   try {
     localStorage.setItem('selectedZones', JSON.stringify(zones));
   } catch (error) {
@@ -332,13 +332,13 @@ const saveSelectedZones = (zones: ZoneType[]) => {
   }
 };
 
-const loadSelectedZones = (): ZoneType[] => {
+const loadSelectedZones = (): string[] => {
   try {
     const saved = localStorage.getItem('selectedZones');
     if (saved) {
       const parsed = JSON.parse(saved);
       // Проверяем, что загруженные зоны существуют в списке доступных зон
-      return parsed.filter((zone: ZoneType) => zones.includes(zone));
+      return parsed.filter((zone: string) => zones.includes(zone));
     }
   } catch (error) {
     console.error('Error loading selected zones from localStorage:', error);
@@ -417,7 +417,7 @@ const selectDate = (date: string) => {
   fetchReservationData(date);
 };
 
-const toggleZone = (zone: ZoneType) => {
+const toggleZone = (zone: string) => {
   const index = selectedZones.value.indexOf(zone);
   if (index > -1) {
     selectedZones.value.splice(index, 1);
@@ -446,7 +446,7 @@ const handleSearch = async () => {
   }
 };
 
-const handleItemClick = (item: any) => {
+const handleItemClick = (item: TableItem) => {
   // Выбор любого элемента для удаления (заказы, бронирования, живая очередь)
   if (selectedOrder.value && selectedOrder.value.id === item.id) {
           // Если кликаем на тот же элемент, снимаем выделение
@@ -457,7 +457,7 @@ const handleItemClick = (item: any) => {
   }
 };
 
-const handleItemDelete = async (item: any) => {
+const handleItemDelete = async (item: TableItem) => {
   try {
     const itemType = item.type === 'order' ? 'заказ' : 'бронирование';
     
@@ -741,10 +741,7 @@ const createNewOrder = async () => {
           // Обновляем данные текущей даты для отображения нового заказа
     await fetchReservationData(selectedDate.value);
     
-    // Показываем сообщение об успехе
-    const tableCount = newOrderData.value.selectedTables.length;
-    const tableText = tableCount === 1 ? 'стол' : tableCount < 5 ? 'стола' : 'столов';
-    alert(`Заказ успешно создан для ${tableCount} ${tableText}!`);
+    alert(`Заказ успешно создан!`);
     
   } catch (error) {
     console.error('Error creating order:', error);
@@ -832,8 +829,8 @@ const doTimeRangesOverlap = (start1: string, end1: string, start2: string, end2:
   return start1Minutes < end2Minutes && start2Minutes < end1Minutes;
 };
 
-const getItemsForTableAndTime = (table: Table, timeSlot: string) => {
-  const items: Array<any> = [];
+const getItemsForTableAndTime = (table: Table, timeSlot: string): Array<TableItem & { type: 'order' | 'reservation'; startTime?: string; endTime?: string; overlapIndex?: number }> => {
+  const items: Array<TableItem & { type: 'order' | 'reservation'; startTime?: string; endTime?: string; overlapIndex?: number }> = [];
   const seenIds = new Set();
   
   // Собираем все элементы (заказы и бронирования) для этого стола
@@ -1661,6 +1658,257 @@ text-align: left;
   
   .btn {
     width: 100%;
+  }
+}
+
+/* Mobile Responsive Styles for screens <= 460px */
+@media (max-width: 460px) {
+  /* General mobile adjustments */
+  .reservation-page {
+    min-width: 280px;
+  }
+
+  /* Header mobile adjustments */
+  .header {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem 0.5rem;
+  }
+
+  .header-left .brand {
+    font-size: 1.2rem;
+    text-align: center;
+  }
+
+  .header-right {
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .search-bar {
+    width: 100%;
+    max-width: none;
+  }
+
+  .search-bar input {
+    font-size: 14px;
+    padding: 0.5rem;
+    width: 100%;
+  }
+
+  .theme-toggle,
+  .exit-btn {
+    width: 100%;
+    padding: 0.5rem;
+    font-size: 14px;
+  }
+
+  /* Main content adjustments */
+  .main-content {
+    padding: 1rem 0.5rem;
+  }
+
+  .page-title h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  /* Date and zone sections */
+  .date-section,
+  .zone-section {
+    margin-bottom: 1rem;
+  }
+
+  .date-section label,
+  .zone-section label {
+    font-size: 14px;
+    margin-bottom: 0.5rem;
+  }
+
+  .date-buttons,
+  .zone-buttons {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .date-btn,
+  .zone-btn {
+    padding: 0.5rem;
+    font-size: 10px;
+    min-width: auto;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .date-btn .date-day {
+    font-size: 10px;
+  }
+
+  .date-btn .date-label {
+    font-size: 10px;
+  }
+
+  /* Instructions */
+  .drag-instructions {
+    padding: 0.75rem;
+    margin: 1rem 0;
+  }
+
+  .instruction-text {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  /* Grid adjustments */
+  .reservation-grid-container {
+    margin: 1rem 0;
+    overflow-x: auto;
+    max-height: 60vh;
+  }
+
+  .table-header-cell {
+    min-width: 80px;
+    padding: 0.25rem;
+  }
+
+  .table-number {
+    font-size: 12px;
+  }
+
+  .table-capacity {
+    font-size: 10px;
+  }
+
+  .table-zone {
+    font-size: 10px;
+  }
+
+  .time-column {
+    min-width: 60px;
+  }
+
+  .time-cell {
+    font-size: 12px;
+    padding: 0.25rem;
+    height: 40px;
+  }
+
+  .grid-content {
+    min-width: 600px; /* Ensure minimum width for scrolling */
+  }
+
+  .table-cell {
+    min-width: 80px;
+    height: 40px;
+  }
+
+  /* Modal adjustments */
+  .modal-overlay {
+    padding: 1rem 0.5rem;
+  }
+
+  .modal-content {
+    width: 95%;
+    max-width: none;
+    margin: 1rem auto;
+    padding: 1rem;
+  }
+
+  .modal-header h3 {
+    font-size: 1.2rem;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-group label {
+    font-size: 14px;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-group input,
+  .form-group select {
+    padding: 0.5rem;
+    font-size: 14px;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .modal-footer button {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 14px;
+  }
+
+  /* Scale widget adjustments */
+  .fixed-scale-widget {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 3000;
+    transform: scale(0.8);
+  }
+
+  .scale-controls {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .scale-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+
+  /* Order details adjustments */
+  .order-details {
+    padding: 0.75rem;
+  }
+
+  .detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .detail-label {
+    font-size: 12px;
+  }
+
+  .detail-value {
+    font-size: 14px;
+  }
+
+  /* Button adjustments */
+  .btn {
+    padding: 0.75rem;
+    font-size: 14px;
+  }
+
+  /* Table column highlight during horizontal drag */
+  .table-column.dragging-horizontal {
+    background-color: rgba(16, 185, 129, 0.1);
+  }
+
+  /* Drag states adjustments */
+  .table-cell.dragging,
+  .table-cell.dragging-horizontal {
+    border-width: 1px;
+  }
+
+  /* Occupied cells adjustments */
+  .table-cell.occupied {
+    background-color: rgba(239, 68, 68, 0.08);
+  }
+
+  .table-cell.occupied:hover {
+    background-color: rgba(239, 68, 68, 0.12);
   }
 }
 </style>

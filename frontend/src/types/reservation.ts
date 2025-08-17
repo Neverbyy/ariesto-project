@@ -70,7 +70,20 @@ export interface DeleteOrderResponse {
   message: string;
 }
 
-export interface ZoneType {
+export type ZoneType = string;
+
+export interface TableItem {
   id: string;
-  name: string;
+  type: 'order' | 'reservation' | 'live_queue';
+  status: string;
+  start_time: string;
+  end_time: string;
+  customer_name?: string;
+  customer_phone?: string;
+  phone_number?: string;
+  num_people: number;
+  name_for_reservation?: string;
+  seating_time?: string;
+  table_id?: string;
+  tables?: string[];
 }
