@@ -459,8 +459,7 @@ const handleItemClick = (item: any) => {
 
 const handleItemDelete = async (item: any) => {
   try {
-    const itemType = item.type === 'order' ? 'заказ' : 
-                     item.status === 'Живая очередь' ? 'запись из живой очереди' : 'бронирование';
+    const itemType = item.type === 'order' ? 'заказ' : 'бронирование';
     
     // Call appropriate API method based on item type
     if (item.type === 'order') {
@@ -483,8 +482,7 @@ const handleItemDelete = async (item: any) => {
   } catch (error) {
     console.error('Error deleting item:', error);
     const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
-    const itemType = item.type === 'order' ? 'заказ' : 
-                     item.status === 'Живая очередь' ? 'запись из живой очереди' : 'бронирование';
+    const itemType = item.type === 'order' ? 'заказ' : 'бронирование';
     alert(`Ошибка при удалении ${itemType}: ${errorMessage}`);
   }
 };
@@ -896,8 +894,8 @@ const getItemsForTableAndTime = (table: Table, timeSlot: string) => {
         }
         // Within reservations, live queue has priority
         if (a.type === 'reservation' && b.type === 'reservation') {
-          if (a.status === 'Живая очередь' && b.status !== 'Живая очередь') return -1;
-          if (a.status !== 'Живая очередь' && b.status === 'Живая очередь') return 1;
+          if (a.status === 'Reservation' && b.status !== 'Reservation') return -1;
+          if (a.status !== 'Reservation' && b.status === 'Reservation') return 1;
         }
         return 0;
       });

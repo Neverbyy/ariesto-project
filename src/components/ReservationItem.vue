@@ -11,7 +11,7 @@
     <div class="item-content">
       <template v-if="props.item.type === 'order'">
         <div class="item-title">{{ itemTitle }}</div>
-        <div class="status-badge">{{ orderStatusText }}</div>
+        <div class="status-badge">{{ statusText }}</div>
         <div class="time-display">{{ orderTimeText }}</div>
         <div class="hover-extra compact" v-if="shouldShowExtraInfo">
           <div class="customer-info" v-if="(orderCustomerName && shouldShowCustomerName) || (orderPeopleText && shouldShowPeople)">
@@ -67,10 +67,10 @@ const emit = defineEmits<{
 
 const isHovered = ref(false);
 
-// Reactive scale tracking
+// Reactive scale tracking - упрощенная версия
 const scale = ref({ horizontalScale: 1, verticalScale: 1 });
 
-// Update scale when component mounts and when parent scale changes
+// Update scale when component mounts
 const updateScale = () => {
   const parentElement = document.querySelector('.reservation-grid-container');
   if (parentElement) {
@@ -81,19 +81,8 @@ const updateScale = () => {
   }
 };
 
-// Watch for scale changes by polling (since CSS custom properties don't trigger reactivity)
-let scaleInterval: ReturnType<typeof setInterval> | null = null;
-
 onMounted(() => {
   updateScale();
-  // Check for scale changes every 100ms
-  scaleInterval = setInterval(updateScale, 100);
-});
-
-onUnmounted(() => {
-  if (scaleInterval) {
-    clearInterval(scaleInterval);
-  }
 });
 
 const itemClass = computed(() => {
@@ -105,7 +94,6 @@ const itemClass = computed(() => {
     return 'order-regular';
   }
   // Reservations
-  if (props.item.status === 'LiveQueue') return 'reservation-live';
   if (props.item.status === 'Reservation') return 'reservation-regular';
   return 'reservation-regular';
 });
@@ -117,73 +105,61 @@ const extractTimeFromISO = (isoString: string): string => {
 };
 
 const itemStyle = computed(() => {
-  const startTimeStr = props.item.type === 'order' ? props.item.start_time : props.item.seating_time;
-  const endTimeStr = props.item.end_time;
-  
-  const startTime = extractTimeFromISO(startTimeStr || '');
-  const endTime = extractTimeFromISO(endTimeStr || '');
-  
-  const [startHours, startMinutes] = startTime.split(':').map(Number);
-  const [endHours, endMinutes] = endTime.split(':').map(Number);
-  
-  const startTotalMinutes = startHours * 60 + startMinutes;
-  const endTotalMinutes = endHours * 60 + endMinutes;
-  const duration = endTotalMinutes - startTotalMinutes;
-  
-  const timeSlotTime = props.timeSlot;
-  const [slotHours, slotMinutes] = timeSlotTime.split(':').map(Number);
-  const slotTotalMinutes = slotHours * 60 + slotMinutes;
-  
-  const { horizontalScale, verticalScale } = scale.value;
-  
-  const topOffset = startTotalMinutes > slotTotalMinutes 
-    ? ((startTotalMinutes - slotTotalMinutes) / 30) * 50 * verticalScale
-    : 0;
-  
-  // Вычисляем высоту карточки на основе продолжительности заказа с учетом масштаба
-  // Увеличиваем минимальную высоту для заказов с дополнительной информацией
-  let minHeight = 50 * verticalScale;
-  
-  // Для заказов с дополнительной информацией (телефон, количество людей) увеличиваем минимальную высоту
-  if (props.item.type === 'order') {
-    const hasExtraInfo = props.item.customer_phone || props.item.num_people;
-    if (hasExtraInfo) {
-      minHeight = Math.max(minHeight, 70 * verticalScale); // Минимум 70px для заказов с доп. информацией
+  try {
+    const startTimeStr = props.item.type === 'order' ? props.item.start_time : props.item.seating_time;
+    const endTimeStr = props.item.end_time;
+    
+    const startTime = extractTimeFromISO(startTimeStr || '');
+    const endTime = extractTimeFromISO(endTimeStr || '');
+    
+    if (!startTime || !endTime) {
+      return {
+        height: '50px',
+        top: '0px',
+        marginLeft: '0px',
+        zIndex: 10
+      };
     }
     
-    // Для заказов с короткой длительностью (менее 1 часа) устанавливаем минимальную высоту
-    if (duration < 60) {
-      minHeight = Math.max(minHeight, 90 * verticalScale); // Минимум 90px для коротких заказов
-    }
+    const [startHours, startMinutes] = startTime.split(':').map(Number);
+    const [endHours, endMinutes] = endTime.split(':').map(Number);
     
-    // Для очень коротких заказов (менее 30 минут) дополнительно увеличиваем минимальную высоту
-    if (duration < 30) {
-      minHeight = Math.max(minHeight, 100 * verticalScale); // Минимум 100px для очень коротких заказов
-    }
+    const startTotalMinutes = startHours * 60 + startMinutes;
+    const endTotalMinutes = endHours * 60 + endMinutes;
+    const duration = endTotalMinutes - startTotalMinutes;
     
-    // Для заказов с очень коротким временем (менее 15 минут) устанавливаем минимальную высоту для основной информации
-    if (duration < 15) {
-      minHeight = Math.max(minHeight, 80 * verticalScale); // Минимум 80px для отображения основной информации
-    }
+    const timeSlotTime = props.timeSlot;
+    const [slotHours, slotMinutes] = timeSlotTime.split(':').map(Number);
+    const slotTotalMinutes = slotHours * 60 + slotMinutes;
+    
+    const { horizontalScale, verticalScale } = scale.value;
+    
+    const topOffset = startTotalMinutes > slotTotalMinutes 
+      ? ((startTotalMinutes - slotTotalMinutes) / 30) * 50 * verticalScale
+      : 0;
+    
+    // Упрощенный расчет высоты
+    const itemHeight = Math.max(50 * verticalScale, ((duration / 30) * 50 + 50) * verticalScale);
+    
+    const overlapOffset = (props.item.overlapIndex || 0) * 10 * horizontalScale;
+    const baseZ = 10 + startTotalMinutes + (props.item.overlapIndex || 0);
+    const zIndex = isHovered.value ? 2000 : baseZ;
+    
+    return {
+      height: `${itemHeight}px`,
+      top: `${topOffset}px`,
+      marginLeft: `${overlapOffset}px`,
+      zIndex: zIndex
+    };
+  } catch (error) {
+    console.error('Error computing itemStyle:', error);
+    return {
+      height: '50px',
+      top: '0px',
+      marginLeft: '0px',
+      zIndex: 10
+    };
   }
-  
-  // Исправляем расчет высоты: добавляем 1 ячейку (50px) для корректного отображения
-  // Это компенсирует то, что карточка должна занимать полную высоту от начала до конца времени
-  const itemHeight = Math.max(
-    minHeight, // Минимальная высота (адаптивная)
-    ((duration / 30) * 50 + 50) * verticalScale // Высота по продолжительности + 1 ячейка
-  );
-  
-  const overlapOffset = (props.item.overlapIndex || 0) * 10 * horizontalScale;
-  const baseZ = 10 + startTotalMinutes + (props.item.overlapIndex || 0);
-  const zIndex = isHovered.value ? 2000 : baseZ;
-  
-  return {
-    height: `${itemHeight}px`,
-    top: `${topOffset}px`,
-    marginLeft: `${overlapOffset}px`,
-    zIndex: zIndex
-  } as Record<string, string | number>;
 });
 
 const itemTitle = computed(() => props.item.type === 'order' ? 'Заказ' : props.item.name_for_reservation);
@@ -197,16 +173,18 @@ const reservationTimeText = computed(() => {
   return '';
 });
 
-const orderStatusText = computed(() => {
-  const statusMap: Record<string, string> = {
-    'New': 'Новый',
-    'Bill': 'Пречек',
-    'Closed': 'Закрытый',
-    'Banquet': 'Банкет',
-    'Reservation': 'Бронирование',
-    'LiveQueue': 'Живая очередь'
-  };
-  return statusMap[props.item.status] || props.item.status;
+const statusText = computed(() => {
+  if (!props.item.status) return '';
+  
+  switch (props.item.status) {
+    case 'New': return 'Новый';
+    case 'Bill': return 'Пречек';
+    case 'Closed': return 'Закрытый';
+    case 'Banquet': return 'Банкет';
+    case 'Reservation': return 'Бронирование';
+    case 'LiveQueue': return 'Живая очередь';
+    default: return props.item.status;
+  }
 });
 
 const orderTimeText = computed(() => {
@@ -215,7 +193,14 @@ const orderTimeText = computed(() => {
   return `${startTime}-${endTime}`;
 });
 
-const reservationStatusText = computed(() => props.item.type === 'reservation' ? props.item.status : '');
+const reservationStatusText = computed(() => {
+  if (props.item.type !== 'reservation') return '';
+  
+  const statusMap: Record<string, string> = {
+    'Reservation': 'Бронирование'
+  };
+  return statusMap[props.item.status] || props.item.status;
+});
 const reservationPeopleText = computed(() => props.item.type === 'reservation' ? `${props.item.num_people} чел` : '');
 const phoneSuffix = computed(() => props.item.type === 'reservation' ? String(props.item.phone_number).slice(-4) : '');
 
@@ -227,63 +212,54 @@ const orderPeopleText = computed(() => props.item.type === 'order' && props.item
 // Определяем, что показывать в зависимости от высоты заказа и масштаба
 const shouldShowExtraInfo = computed(() => {
   if (props.item.type !== 'order') return false;
+  if (props.verticalScale <= 0.5) return false;
   
-  // При максимальном отдалении масштаба (verticalScale = 0.5), скрываем всю дополнительную информацию
-  if (props.verticalScale <= 0.5) {
+  try {
+    const itemHeight = itemStyle.value.height;
+    const heightValue = parseInt(String(itemHeight));
+    return heightValue >= 60;
+  } catch {
     return false;
   }
-  
-  // Получаем текущую высоту элемента
-  const itemHeight = itemStyle.value.height;
-  const heightValue = parseInt(String(itemHeight));
-  
-  // Если высота меньше 60px, показываем только основную информацию
-  return heightValue >= 60;
 });
 
 const shouldShowCustomerName = computed(() => {
   if (props.item.type !== 'order') return false;
+  if (props.verticalScale <= 0.5) return false;
   
-  // При максимальном отдалении масштаба (verticalScale = 0.5), скрываем имя клиента
-  if (props.verticalScale <= 0.5) {
+  try {
+    const itemHeight = itemStyle.value.height;
+    const heightValue = parseInt(String(itemHeight));
+    return heightValue >= 75;
+  } catch {
     return false;
   }
-  
-  const itemHeight = itemStyle.value.height;
-  const heightValue = parseInt(String(itemHeight));
-  
-  // Имя клиента показываем только если высота позволяет
-  return heightValue >= 75;
 });
 
 const shouldShowPhone = computed(() => {
   if (props.item.type !== 'order') return false;
+  if (props.verticalScale <= 0.5) return false;
   
-  // При максимальном отдалении масштаба (verticalScale = 0.5), скрываем телефон
-  if (props.verticalScale <= 0.5) {
+  try {
+    const itemHeight = itemStyle.value.height;
+    const heightValue = parseInt(String(itemHeight));
+    return heightValue >= 70;
+  } catch {
     return false;
   }
-  
-  const itemHeight = itemStyle.value.height;
-  const heightValue = parseInt(String(itemHeight));
-  
-  // Телефон показываем только если высота позволяет
-  return heightValue >= 70;
 });
 
 const shouldShowPeople = computed(() => {
   if (props.item.type !== 'order') return false;
+  if (props.verticalScale <= 0.5) return false;
   
-  // При максимальном отдалении масштаба (verticalScale = 0.5), скрываем количество людей
-  if (props.verticalScale <= 0.5) {
+  try {
+    const itemHeight = itemStyle.value.height;
+    const heightValue = parseInt(String(itemHeight));
+    return heightValue >= 65;
+  } catch {
     return false;
   }
-  
-  const itemHeight = itemStyle.value.height;
-  const heightValue = parseInt(String(itemHeight));
-  
-  // Количество людей показываем только если высота позволяет
-  return heightValue >= 65;
 });
 
 const handleClick = () => emit('click', props.item);
@@ -313,9 +289,6 @@ const getDeleteButtonTitle = () => {
     case 'order':
       return 'Удалить заказ';
     case 'reservation':
-      if (props.item.status === 'LiveQueue') {
-        return 'Удалить из живой очереди';
-      }
       return 'Удалить бронирование';
     default:
       return 'Удалить';
@@ -323,8 +296,7 @@ const getDeleteButtonTitle = () => {
 };
 
 const handleDelete = () => {
-  const itemType = props.item.type === 'order' ? 'заказ' : 
-                   props.item.status === 'LiveQueue' ? 'запись из живой очереди' : 'бронирование';
+  const itemType = props.item.type === 'order' ? 'заказ' : 'бронирование';
   
   if (confirm(`Вы уверены, что хотите удалить этот ${itemType}?`)) {
     emit('delete', props.item);

@@ -287,24 +287,24 @@ const generateMockTables = (date) => {
       dateItems.forEach((item, itemId) => {
         if (item.table_id === table.id) {
           // Determine if it's an order or reservation based on status
-          if (item.status === 'Reservation' || item.status === 'LiveQueue') {
+          if (item.status === 'Reservation') {
             // This is a reservation
             reservations.push({
               id: item.id,
               name_for_reservation: item.customer_name,
               num_people: item.num_people,
               phone_number: item.customer_phone,
-              status: item.status === 'LiveQueue' ? 'Живая очередь' : item.status,
+              status: item.status,
               seating_time: `${date}T${item.start}:00+10:00`,
               end_time: `${date}T${item.end}:00+10:00`
             });
           } else {
-            // This is an order
+            // This is an order (including LiveQueue)
             orders.push({
               id: item.id,
               status: item.status,
-              start_time: `${date}T${item.start}:00+10:00`,
-              end_time: `${date}T${item.end}:00+10:00`,
+              start_time: `${date}T${item.start}:00+00:00`,
+              end_time: `${date}T${item.end}:00+00:00`,
               customer_phone: item.customer_phone,
               num_people: item.num_people,
               customer_name: item.customer_name

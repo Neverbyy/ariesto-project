@@ -319,6 +319,36 @@
       "customer_phone": "9308837034",
       "num_people": 1,
       "table_id": "8"
+    },
+    "new-1755429798734-mm0r8ftee": {
+      "id": "new-1755429798734-mm0r8ftee",
+      "status": "New",
+      "start": "11:30",
+      "end": "13:30",
+      "customer_name": "Артём",
+      "customer_phone": "9308837034",
+      "num_people": 1,
+      "table_id": "12"
+    },
+    "new-1755429814416-0iba00bp6": {
+      "id": "new-1755429814416-0iba00bp6",
+      "status": "LiveQueue",
+      "start": "13:00",
+      "end": "15:00",
+      "customer_name": "Сергей",
+      "customer_phone": "9308837034",
+      "num_people": 1,
+      "table_id": "11"
+    },
+    "new-1755429823595-7kmjd74jr": {
+      "id": "new-1755429823595-7kmjd74jr",
+      "status": "Reservation",
+      "start": "11:00",
+      "end": "12:30",
+      "customer_name": "Юлия",
+      "customer_phone": "9308837034",
+      "num_people": 1,
+      "table_id": "7"
     }
   },
   "2025-08-18": {
