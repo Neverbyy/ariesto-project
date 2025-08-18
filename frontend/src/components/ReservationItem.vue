@@ -136,11 +136,6 @@ const itemStyle = computed(() => {
     const verticalScale = props.verticalScale;
     const horizontalScale = 1; // Пока используем фиксированное значение
     
-    // Отладочная информация для диагностики
-    if (props.item.type === 'order' && duration > 30) {
-      console.log(`Order ${props.item.id}: duration=${duration}min, verticalScale=${verticalScale}, timeSlot=${timeSlotTime}`);
-    }
-    
     // Правильный расчет смещения сверху
     // Если время начала заказа больше времени текущего слота,
     // то нужно сместить карточку вниз на соответствующее количество ячеек
@@ -157,11 +152,6 @@ const itemStyle = computed(() => {
     
     // Высота карточки = количество слотов * высота слота
     const itemHeight = timeSlotsCount * baseTimeSlotHeight;
-    
-    // Отладочная информация для диагностики
-    if (props.item.type === 'order' && duration > 30) {
-      console.log(`Order ${props.item.id}: duration=${duration}min, timeSlots=${timeSlotsCount}, height=${itemHeight}px, scale=${verticalScale}, baseHeight=${baseTimeSlotHeight}`);
-    }
     
     const overlapOffset = (props.item.overlapIndex || 0) * 10 * horizontalScale;
     const baseZ = 10 + startTotalMinutes + (props.item.overlapIndex || 0);
