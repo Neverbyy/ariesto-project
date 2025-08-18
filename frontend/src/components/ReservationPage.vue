@@ -71,7 +71,7 @@
        </div>
 
       <!-- Reservation Grid -->
-      <div class="reservation-grid-container" :style="gridStyles">
+      <div class="reservation-grid-container" :style="gridStyles" :aria-busy="isLoading">
         <div class="grid-wrapper">
           <!-- Fixed table headers -->
           <div class="table-headers">
@@ -235,6 +235,11 @@
         </div>
       </div>
     </div>
+    <!-- Full-page loading overlay -->
+    <div v-if="isLoading" class="page-loading-overlay" role="status" aria-live="polite" aria-busy="true">
+      <div class="spinner" aria-hidden="true"></div>
+      <div class="loading-text">Загрузка данных…</div>
+    </div>
   </div>
 </template>
 
@@ -249,6 +254,7 @@ const reservationData = ref<ReservationData | null>(null);
 const selectedDate = ref<string>('');
 const selectedZones = ref<string[]>([]);
 const searchQuery = ref<string>('');
+const isLoading = ref(false);
 
   // Состояние масштаба
   const horizontalScale = ref(0.5); // Базовый масштаб для горизонтали (столбцы таблиц) - максимально отдалено
@@ -401,11 +407,14 @@ const timeSlots = computed(() => {
   // Методы
 const fetchReservationData = async (date: string) => {
   try {
+    isLoading.value = true;
     console.log(`Fetching data for date: ${date}`);
     const data = await reservationApi.getReservations(date);
     reservationData.value = data;
+    isLoading.value = false;
   } catch (error) {
     console.error('Error fetching reservation data:', error);
+    // Не снимаем isLoading: спиннер остается, пока данные не будут успешно загружены
     throw error;
   }
 };
@@ -431,14 +440,17 @@ const toggleZone = (zone: string) => {
 const handleSearch = async () => {
   if (searchQuery.value.trim()) {
     try {
+      isLoading.value = true;
       console.log(`Searching for: ${searchQuery.value}`);
       const data = await reservationApi.searchReservations(searchQuery.value);
       console.log('Search results:', data);
       reservationData.value = data;
+      isLoading.value = false;
     } catch (error) {
       console.error('Error searching reservations:', error);
-      // Возврат к данным текущей даты при ошибке поиска
-      fetchReservationData(selectedDate.value);
+      // Возврат к данным текущей даты; спиннер снимется внутри fetchReservationData при успехе
+      await fetchReservationData(selectedDate.value);
+      return;
     }
   } else {
     // Если поиск пустой, загружаем данные текущей даты
@@ -459,6 +471,7 @@ const handleItemClick = (item: TableItem) => {
 
 const handleItemDelete = async (item: TableItem) => {
   try {
+    isLoading.value = true;
     const itemType = item.type === 'order' ? 'заказ' : 'бронирование';
     
     // Вызываем соответствующий API метод в зависимости от типа элемента
@@ -484,6 +497,8 @@ const handleItemDelete = async (item: TableItem) => {
     const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
     const itemType = item.type === 'order' ? 'заказ' : 'бронирование';
     alert(`Ошибка при удалении ${itemType}: ${errorMessage}`);
+    // Операция удаления не удалась — прекращаем блокировку
+    isLoading.value = false;
   }
 };
 
@@ -721,6 +736,7 @@ const canCreateOrder = computed(() => {
 
 const createNewOrder = async () => {
   try {
+    isLoading.value = true;
     // Создаем один заказ для всех выбранных столов
     const order = {
       start_time: `${selectedDate.value}T${newOrderData.value.startTime}:00+10:00`,
@@ -747,6 +763,8 @@ const createNewOrder = async () => {
     console.error('Error creating order:', error);
     const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
     alert(`Ошибка при создании заказа: ${errorMessage}`);
+    // Операция создания не удалась — прекращаем блокировку
+    isLoading.value = false;
   }
 };
 
@@ -1176,6 +1194,51 @@ text-align: left;
   /* Custom scrollbar styles */
   scrollbar-width: auto;
   scrollbar-color: #606060 var(--bg-secondary);
+}
+
+/* Loading overlays */
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 2200;
+  backdrop-filter: blur(2px);
+}
+
+.page-loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 4000; /* выше, чем модалки и виджеты */
+  backdrop-filter: blur(2px);
+}
+
+.spinner {
+  width: 42px;
+  height: 42px;
+  border: 4px solid rgba(255, 255, 255, 0.25);
+  border-top-color: var(--accent-color);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.loading-text {
+  margin-top: 12px;
+  color: var(--text-primary);
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Webkit scrollbar styles (Chrome, Safari, Edge) */
