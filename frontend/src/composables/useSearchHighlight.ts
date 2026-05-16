@@ -30,7 +30,6 @@ export function useSearchHighlight(params: UseSearchHighlightParams): UseSearchH
     return ids;
   });
 
-  // Группировка совпадений по датам, отличным от выбранной.
   const otherDates = computed(() => {
     const buckets = new Map<string, number>();
     for (const r of results.value) {

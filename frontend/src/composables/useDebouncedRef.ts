@@ -1,9 +1,5 @@
 import { ref, watch, onUnmounted, type Ref } from 'vue';
 
-/**
- * Реактивный ref, отстающий от исходного на `delayMs` миллисекунд.
- * Полезно для отправки запросов на поиск только после паузы во вводе.
- */
 export function useDebouncedRef<T>(source: Ref<T>, delayMs: number): Ref<T> {
   const debounced = ref(source.value) as Ref<T>;
   let timer: ReturnType<typeof setTimeout> | null = null;

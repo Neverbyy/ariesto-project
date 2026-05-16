@@ -127,13 +127,11 @@ const { horizontalScale, verticalScale, increaseScale, decreaseScale } = useScal
 const { currentTime, currentMinutes } = useCurrentTime();
 const isToday = computed(() => selectedDate.value === todayISO());
 
-// Запросы Vue Query
 const reservationsQuery = useReservationsByDate(selectedDate);
 const searchResultsQuery = useSearchReservations(debouncedQuery);
 const createOrderMutation = useCreateOrder(selectedDate);
 const deleteOrderMutation = useDeleteOrder(selectedDate);
 
-// Источник данных грида — всегда по дате; поиск только подсвечивает поверх.
 const reservationData = computed(() => reservationsQuery.data.value ?? null);
 
 const searchResults = computed(() => searchResultsQuery.data.value?.results ?? []);
@@ -166,8 +164,6 @@ const filteredTables = computed(() =>
 );
 const timeSlots = useTimeSlots(restaurant);
 
-// --- Модалка создания заказа ---
-
 const showNewOrderModal = ref(false);
 const dragInfo = ref<DragInfo | null>(null);
 
@@ -195,10 +191,6 @@ const createNewOrder = (payload: CreateOrderPayload) => {
   createOrderMutation.mutate(order, { onSuccess: closeNewOrderModal });
 };
 
-// --- Прочие обработчики ---
-
-// Поиск не сбрасываем — пользователь может переключиться на другую дату,
-// чтобы увидеть подсветку совпадений из чипов "ещё совпадения в других датах".
 const selectDate = (date: string) => {
   selectedDate.value = date;
 };

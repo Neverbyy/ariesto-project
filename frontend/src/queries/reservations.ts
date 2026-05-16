@@ -9,7 +9,6 @@ import type { TableItem } from '../types/reservation'
 const getErrorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : 'Неизвестная ошибка'
 
-// Красный крестик из Ant Design (тот же, что у message.error)
 const renderRedCrossIcon = () =>
   h(CloseCircleFilled, { style: 'color: #ff4d4f' })
 
@@ -39,7 +38,7 @@ export function useSearchReservations(query: MaybeRef<string>) {
 
 export function useCreateOrder(activeDate: MaybeRef<string>) {
   const qc = useQueryClient()
-  // useApp() — themed message/modal, подхватывает тёмную/светлую тему из ConfigProvider
+
   const { message } = AntApp.useApp()
   return useMutation({
     mutationFn: (orderData: Parameters<typeof reservationApi.createOrder>[0]) =>

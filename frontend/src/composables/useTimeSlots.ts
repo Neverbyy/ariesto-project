@@ -2,7 +2,6 @@ import { computed, type Ref } from 'vue';
 import type { Restaurant } from '../types/reservation';
 import { generateTimeSlots } from '../utils/time';
 
-/** Временные слоты на основе расписания ресторана. Пустой массив, если данных нет. */
 export function useTimeSlots(restaurant: Ref<Restaurant | undefined>) {
   return computed(() => {
     if (!restaurant.value) return [];

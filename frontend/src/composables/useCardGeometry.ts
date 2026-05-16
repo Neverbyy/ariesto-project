@@ -47,7 +47,6 @@ export function useCardGeometry(params: UseCardGeometryParams): UseCardGeometryR
     return 'long';
   });
 
-  // Полностью прошедший заказ (end_time <= сейчас) — серый. Только для сегодняшней даты.
   const isPast = computed(() => {
     if (!isToday.value || currentMinutes.value === undefined || !endTime.value) return false;
     return toMinutes(endTime.value) <= currentMinutes.value;

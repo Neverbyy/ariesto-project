@@ -1,5 +1,4 @@
-// Чистые утилиты для работы со временем и датами.
-// Извлекаются из обоих компонентов, чтобы не дублировать одну и ту же логику.
+
 
 const MONTH_NAMES = [
   'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
@@ -17,19 +16,16 @@ export interface FormattedDate {
   label: string;
 }
 
-/** Достаёт ЧЧ:ММ из ISO-строки без переключения часового пояса. */
 export function extractTimeFromISO(isoString: string): string {
   const timeMatch = isoString.match(/T(\d{2}:\d{2}):\d{2}/);
   return timeMatch ? timeMatch[1] : '';
 }
 
-/** Переводит ЧЧ:ММ в число минут от полуночи. */
 export function toMinutes(time: string): number {
   const [h, m] = time.split(':').map(Number);
   return h * 60 + m;
 }
 
-/** Проверяет, перекрываются ли два временных интервала в формате ЧЧ:ММ. */
 export function doTimeRangesOverlap(
   start1: string, end1: string,
   start2: string, end2: string,
@@ -38,7 +34,6 @@ export function doTimeRangesOverlap(
       && toMinutes(start2) < toMinutes(end1);
 }
 
-/** Длительность интервала в минутах. */
 export function durationMinutes(start: string, end: string): number {
   return toMinutes(end) - toMinutes(start);
 }
@@ -47,7 +42,6 @@ export function getMonthName(month: number): string {
   return MONTH_NAMES[month];
 }
 
-/** Формат для кнопок дат: { 17, 'мая', 'сегодня'/'завтра'/<день недели> }. */
 export function formatDate(dateString: string): FormattedDate {
   const date = new Date(dateString);
   const today = new Date();
@@ -67,13 +61,11 @@ export function formatDate(dateString: string): FormattedDate {
   return { day: date.getDate(), month: getMonthName(date.getMonth()), label };
 }
 
-/** Формат для шапки модалки: "17 мая 2026". */
 export function formatDateForModal(dateString: string): string {
   const date = new Date(dateString);
   return `${date.getDate()} ${getMonthName(date.getMonth())} ${date.getFullYear()}`;
 }
 
-/** Генерирует временные слоты с шагом 30 минут от opening до closing. */
 export function generateTimeSlots(opening: string, closing: string): string[] {
   const slots: string[] = [];
   const current = new Date(`2000-01-01T${opening}`);
@@ -85,7 +77,6 @@ export function generateTimeSlots(opening: string, closing: string): string[] {
   return slots;
 }
 
-/** Возвращает сегодняшнюю дату в формате YYYY-MM-DD. */
 export function todayISO(): string {
   return new Date().toISOString().split('T')[0];
 }

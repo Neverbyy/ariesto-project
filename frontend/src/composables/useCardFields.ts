@@ -1,9 +1,6 @@
 import { computed, type ComputedRef, type Ref } from 'vue';
 import type { GridItem } from '../utils/tableItems';
 
-// Discriminated union: набор полей зависит от типа карточки.
-// `phone` присутствует у обоих — на карточке заказа показывается целиком,
-// у бронирования рендерится только в тултипе (на карточке — phoneShort).
 interface BaseFields {
   title: string;
   badge: string;
@@ -51,7 +48,6 @@ interface UseCardFieldsReturn {
 export function useCardFields(params: UseCardFieldsParams): UseCardFieldsReturn {
   const { item, isOrder, statusLabel, timeText, itemHeightPx, hasOverflow } = params;
 
-  // Пороги видимости блоков по высоте — что вообще пытаемся отрендерить на карточке.
   const display = computed<CardDisplay>(() => {
     const h = itemHeightPx.value;
     return {
@@ -87,7 +83,6 @@ export function useCardFields(params: UseCardFieldsParams): UseCardFieldsReturn 
     };
   });
 
-  // "Иван; 3 чел" — собранная строка имени и кол-ва людей для заказа (с учётом порогов).
   const customerLine = computed(() => {
     const f = fields.value;
     if (f.type !== 'order') return '';
@@ -97,7 +92,6 @@ export function useCardFields(params: UseCardFieldsParams): UseCardFieldsReturn 
     return [name, people].filter(Boolean).join('; ');
   });
 
-  // Открывается, если что-то скрыто пороговой логикой ИЛИ DOM реально обрезает контент.
   const tooltipLines = computed<string[]>(() => {
     const d = display.value;
     const f = fields.value;

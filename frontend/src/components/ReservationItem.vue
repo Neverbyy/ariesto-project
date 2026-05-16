@@ -123,8 +123,7 @@ const handleDelete = () => {
     okType: 'danger',
     cancelText: 'Отмена',
     centered: true,
-    // Карточка в hover-состоянии имеет z-index 2000, а .delete-button внутри — 9999.
-    // Перебиваем, чтобы модалка не оказалась под ними.
+
     zIndex: 10000,
     onOk: () => emit('delete', props.item),
   });
@@ -148,7 +147,6 @@ const handleDelete = () => {
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 
-  /* Дизайн-токены карточки. Переопределяются в [data-duration], [data-scale] и @media ниже. */
   --card-title-size: 0.85rem;
   --card-title-line: 1.1;
   --card-title-mt: 0;
@@ -280,7 +278,6 @@ const handleDelete = () => {
   margin: 0;
 }
 
-/* Короткие заказы (< 60 мин) */
 .reservation-item[data-duration="short"] {
   --card-content-padding: 2px 0;
   --card-content-justify: space-between;
@@ -295,7 +292,6 @@ const handleDelete = () => {
   --card-time-mb: 1px;
 }
 
-/* Минимальный масштаб */
 .reservation-item[data-scale="0.5"] {
   --card-title-size: 0.8rem;
   --card-title-line: 1;
@@ -305,7 +301,6 @@ const handleDelete = () => {
   --card-time-line: 1;
 }
 
-/* Короткий + минимальный масштаб */
 .reservation-item[data-scale="0.5"][data-duration="short"] {
   --card-content-padding: 1px 0;
   --card-title-size: 0.75rem;
@@ -317,7 +312,6 @@ const handleDelete = () => {
   --card-time-mb: 0;
 }
 
-/* Цвета карточек согласно спецификации */
 .order-regular {
   background-color: color-mix(in srgb, var(--card-order-regular) 25%, transparent);
   border-left: 4px solid var(--card-order-regular);
@@ -341,7 +335,6 @@ const handleDelete = () => {
   border-left: 4px solid var(--card-reservation-regular);
 }
 
-/* Прошедшие заказы (end_time <= сейчас) — серые. Перекрываем цветной фон. */
 .reservation-item.past-item {
   background-color: rgba(140, 140, 140, 0.18) !important;
   border-left: 4px solid #8a8a8a !important;
@@ -349,7 +342,6 @@ const handleDelete = () => {
   box-shadow: none !important;
 }
 
-/* Светлая тема: усиленный контраст */
 :global(.light-theme) .order-regular {
   background-color: color-mix(in srgb, var(--card-order-regular) 35%, transparent);
   border-left: 5px solid var(--card-order-regular);

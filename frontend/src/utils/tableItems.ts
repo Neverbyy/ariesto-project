@@ -15,10 +15,6 @@ function toMinutes(time: string): number {
   return h * 60 + m;
 }
 
-/**
- * Собирает все элементы стола (заказы + бронирования) и считает индексы перекрытий.
- * Сортирует перекрывающиеся по времени начала, затем по приоритету типа/статуса.
- */
 function buildItemsForTable(table: Table): RawItem[] {
   const items: RawItem[] = [];
 
@@ -57,7 +53,6 @@ function buildItemsForTable(table: Table): RawItem[] {
       const bMin = toMinutes(b.startTime);
       if (aMin !== bMin) return aMin - bMin;
 
-      // Приоритет: заказы > бронирования; среди бронирований Reservation > LiveQueue
       if (a.type !== b.type) return a.type === 'order' ? -1 : 1;
       if (a.type === 'reservation') {
         if (a.status === 'Reservation' && b.status !== 'Reservation') return -1;
@@ -73,10 +68,6 @@ function buildItemsForTable(table: Table): RawItem[] {
   });
 }
 
-/**
- * Возвращает элементы, которые "стартуют" в указанном временном слоте для данного стола.
- * Дальнейшая раскладка по высоте — на стороне ReservationItem.
- */
 export function getItemsForTableAndTime(table: Table, timeSlot: string): GridItem[] {
   const allItems = buildItemsForTable(table);
   const seen = new Set<string>();

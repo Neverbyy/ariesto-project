@@ -1,4 +1,4 @@
-// Общие типы для фронтенда и бэкенда
+
 
 export interface Restaurant {
   id: number;

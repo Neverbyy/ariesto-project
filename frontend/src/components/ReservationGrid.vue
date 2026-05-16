@@ -106,7 +106,6 @@ const emit = defineEmits<{
   'drag-complete': [payload: DragCompletePayload];
 }>();
 
-// Слот полностью в прошлом, если его конец (start + 30 мин) уже наступил.
 const isPastSlot = (ts: string): boolean => {
   if (!props.isToday) return false;
   return toMinutes(ts) + MINUTES_PER_SLOT <= props.currentMinutes;
@@ -139,8 +138,6 @@ const cellClasses = (table: Table, ts: string) => ({
   past: isPastSlot(ts),
 });
 
-// Точная пиксельная позиция полосы текущего времени относительно .grid-content.
-// null = не показывать (не сегодня, нет слотов, или время вне диапазона работы).
 const nowLineTop = computed<number | null>(() => {
   if (!props.isToday || props.timeSlots.length === 0) return null;
   const openingMinutes = toMinutes(props.timeSlots[0]);
@@ -150,11 +147,6 @@ const nowLineTop = computed<number | null>(() => {
   const slotHeight = BASE_SLOT_HEIGHT * props.verticalScale;
   return ((props.currentMinutes - openingMinutes) / MINUTES_PER_SLOT) * slotHeight;
 });
-
-// --- Label вне скролл-контейнера ---
-// Лейбл рендерится в .grid-shell слева от .reservation-grid-container,
-// чтобы не клипался overflow и не перекрывал time-cells. Координата top
-// синхронизируется со скроллом и ресайзом грида.
 
 const gridContainerEl = ref<HTMLElement | null>(null);
 const gridContentEl = ref<HTMLElement | null>(null);
@@ -166,7 +158,7 @@ const updateScrollTop = () => {
 };
 
 const updateGridContentOffsetTop = () => {
-  // offsetTop .grid-content относительно .reservation-grid-container = высота .table-headers.
+
   gridContentOffsetTop.value = gridContentEl.value?.offsetTop ?? 0;
 };
 
@@ -189,13 +181,12 @@ onUnmounted(() => {
   resizeObserver = null;
 });
 
-// На случай изменений, которые ResizeObserver не уловит (смена дня/масштаба).
 watch([() => props.verticalScale, () => props.timeSlots.length, () => props.tables.length],
   () => nextTick(updateGridContentOffsetTop));
 
 const labelOutsideTop = computed<number | null>(() => {
   if (nowLineTop.value === null) return null;
-  // -11 — половина высоты лейбла, чтобы он центрировался по линии.
+
   return gridContentOffsetTop.value + nowLineTop.value - scrollTop.value - 11;
 });
 </script>
@@ -210,12 +201,7 @@ const labelOutsideTop = computed<number | null>(() => {
   position: relative;
   scrollbar-width: auto;
   scrollbar-color: #606060 var(--bg-secondary);
-  /*
-   * CSS containment: говорим браузеру, что style/layout-изменения внутри грида
-   * не влияют на остальную страницу. На смене темы это позволяет ограничить
-   * каскад перерасчётов 300+ ячейками внутри грида, а не растягивать его на
-   * весь DOM. Также помогает при скролле и hover'е.
-   */
+
   contain: layout style;
 }
 
@@ -272,11 +258,6 @@ const labelOutsideTop = computed<number | null>(() => {
 .table-capacity { font-size: 0.9rem; color: #a0a0a0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .table-zone { font-size: 0.8rem; color: #808080; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/*
- * z-index: 1 создаёт у grid-content собственный stacking-context, чтобы
- * содержимое (карточки с z до 2000 на hover) не «выныривало» поверх
- * sticky-заголовков (.table-headers z-index 700).
- */
 .grid-content { display: flex; position: relative; z-index: 1; }
 
 .current-time-line {
@@ -286,7 +267,7 @@ const labelOutsideTop = computed<number | null>(() => {
   height: 2px;
   background-color: var(--card-reservation-regular);
   box-shadow: 0 0 6px var(--card-reservation-regular);
-  /* Выше .time-column (700) и заклампленных в z=1 карточек .tables-columns. */
+
   z-index: 800;
   pointer-events: none;
 }
@@ -338,11 +319,6 @@ const labelOutsideTop = computed<number | null>(() => {
   text-overflow: ellipsis;
 }
 
-/*
- * position: relative + z-index: 1 — собственный stacking-context для всех
- * .reservation-item внутри. Без этого карточки (baseZ = 10 + минуты,
- * hover = 2000) перекрывали .current-time-line.
- */
 .tables-columns {
   display: flex;
   flex: 1;

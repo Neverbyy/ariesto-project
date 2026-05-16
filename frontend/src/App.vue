@@ -4,14 +4,8 @@ import { ConfigProvider, App as AntApp, theme } from 'ant-design-vue';
 import ReservationPage from './components/ReservationPage.vue';
 import { useTheme } from './composables/useTheme';
 
-// Тема — singleton, шапка переключает один и тот же ref.
-// ConfigProvider даёт темизацию всем дочерним antd-компонентам,
-// AntApp требуется, чтобы App.useApp() (message/Modal) тоже подхватил тему.
 const { isDarkTheme } = useTheme();
 
-// Мемоизируем два варианта config-объекта — каждый из них стабильный по ссылке.
-// computed возвращает одно из двух, что уменьшает шанс лишних ре-инициализаций
-// внутри ConfigProvider при повторных переключениях туда-обратно.
 const ANT_THEME_DARK = { algorithm: theme.darkAlgorithm };
 const ANT_THEME_LIGHT = { algorithm: theme.defaultAlgorithm };
 const antTheme = computed(() => isDarkTheme.value ? ANT_THEME_DARK : ANT_THEME_LIGHT);
@@ -35,19 +29,10 @@ const antTheme = computed(() => isDarkTheme.value ? ANT_THEME_DARK : ANT_THEME_L
 html, body {
   width: 100%;
   max-width: 100%;
-  /*
-   * Сбрасываем height: 100% из ant-design-vue/dist/reset.css.
-   * С height: 100% body становится ровно 100vh, и наш контент с min-height: 100vh
-   * (+ хедер, паддинги, грид) торчит за пределы body — в "щель" между body и html
-   * проступают антд-цвета (тонкая голубоватая рамка по краям в светлой теме).
-   */
+
   height: auto;
 }
 
-/*
- * Фон html нужен явно для обеих тем: контент может перерасти body даже без height:100%
- * (на коротких страницах body короче контента); тогда фон, виден за body, — это фон html.
- */
 html {
   background-color: #1a1a1a;
 }
@@ -56,11 +41,6 @@ html.light-theme {
   background-color: #f5f5f5;
 }
 
-/*
- * overflow-x: hidden ставим ТОЛЬКО на body, не на html.
- * Если задать обоим, спецификация CSS неявно делает overflow-y: auto на каждом —
- * и html, и body становятся скролл-контейнерами одновременно (двойной скролл в light theme).
- */
 body {
   overflow-x: hidden;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -78,26 +58,6 @@ body.light-theme {
   max-width: 100%;
 }
 
-/*
- * min-height: 100vh держим только на .reservation-page (один источник истины).
- * Стэкать его на #app и .ant-app тоже — лишнее: дочерний 100vh-блок и так
- * растянет родителей нормальным flow-ом.
- */
-
-/*
- * Transitions для смены темы.
- *
- * useTheme() ставит класс .theme-switching на <html> на ~320мс при toggleTheme().
- *
- * Селектор намеренно НЕ универсальный (* был лагучим): на 300+ ячейках сетки и
- * десятках карточек одновременная 300мс-анимация bg/border создаёт сильный
- * каскад перерисовок. Фейдим только крупный "хром" — body/page/header/секции
- * сетки. Мелкие элементы (cells, cards, buttons) переключаются мгновенно —
- * на фоне общего fade этого визуально не видно, зато нет лагов.
- *
- * !important перебивает локальные transition: all внутри NewOrderModal / Scale,
- * чтобы они тоже фейдили только цветовые свойства, а не "всё подряд".
- */
 html.theme-switching,
 html.theme-switching body,
 html.theme-switching .reservation-page,
@@ -115,7 +75,6 @@ html.theme-switching .fixed-scale-widget {
     border-color 0.3s ease !important;
 }
 
-/* CSS-переменные нашей кастомной темы (используются нашими компонентами, не antd) */
 :root {
   --bg-primary: #1a1a1a;
   --bg-secondary: #2a2a2a;

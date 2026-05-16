@@ -2,10 +2,6 @@ import { ref, watch, onMounted } from 'vue';
 
 const STORAGE_KEY = 'selectedZones';
 
-/**
- * Хранит выбранные зоны и синхронизирует с localStorage.
- * Зоны фильтруются по списку допустимых.
- */
 export function useSelectedZones(availableZones: string[], defaults: string[] = availableZones) {
   const selectedZones = ref<string[]>([...defaults]);
 

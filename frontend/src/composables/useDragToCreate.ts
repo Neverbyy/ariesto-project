@@ -37,9 +37,9 @@ export interface UseDragToCreateOptions {
   timeSlots: Ref<string[]>;
   filteredTables: Ref<Table[]>;
   verticalScale: Ref<number>;
-  /** Должна возвращать true, если в ячейке уже есть элементы — drag отменяется. */
+
   isCellOccupied: (table: Table, timeSlot: string) => boolean;
-  /** Должна возвращать true, если слот полностью в прошлом — drag запрещён. */
+
   isPastSlot?: (timeSlot: string) => boolean;
   onComplete: (payload: DragCompletePayload) => void;
 }
@@ -68,7 +68,6 @@ export function useDragToCreate(opts: UseDragToCreateOptions) {
     const startIndex = opts.timeSlots.value.indexOf(dragData.value.startTimeSlot);
     if (startIndex === -1) return;
 
-    // Только вниз: endIndex >= startIndex
     const endIndex = Math.max(
       startIndex,
       Math.min(opts.timeSlots.value.length - 1, startIndex + dragged),
@@ -99,13 +98,11 @@ export function useDragToCreate(opts: UseDragToCreateOptions) {
   const handleMouseEnter = (event: MouseEvent, table: Table, timeSlot: string) => {
     if (!isDragging.value || !dragData.value.table) return;
 
-    // Если в ячейке уже что-то есть — прерываем drag
     if (opts.isCellOccupied(table, timeSlot)) {
       reset();
       return;
     }
 
-    // Затаскивание курсора в прошлый слот — прерываем drag
     if (opts.isPastSlot?.(timeSlot)) {
       reset();
       return;
@@ -156,7 +153,6 @@ export function useDragToCreate(opts: UseDragToCreateOptions) {
     reset();
   };
 
-  /** В диапазоне drag? Используется для подсветки ячеек. */
   const isInDragRange = (timeSlot: string): boolean => {
     if (!isDragging.value || !dragData.value.table) return false;
     const startIndex = opts.timeSlots.value.indexOf(dragData.value.startTimeSlot);

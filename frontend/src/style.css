@@ -12,7 +12,6 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* Theme variables */
   --bg-primary: #1a1a1a;
   --bg-secondary: #2a2a2a;
   --bg-tertiary: #404040;
@@ -21,14 +20,12 @@
   --text-muted: #a0a0a0;
   --border-color: #404040;
   --accent-color: #3b82f6;
-  
-  /* Order and reservation colors */
-  --card-order-regular: #3b82f6;    /* Blue for regular orders */
-  --card-order-banquet: #f59e0b;    /* Amber for banquet orders */
-  --card-reservation-regular: #10b981; /* Green for reservations */
-  --card-reservation-live: #ef4444;   /* Red for live queue */
-  
-  /* Scale widget variables */
+
+  --card-order-regular: #3b82f6;
+  --card-order-banquet: #f59e0b;
+  --card-reservation-regular: #10b981;
+  --card-reservation-live: #ef4444;
+
   --scale-widget-bg: #2a2a2a;
   --scale-widget-border: #404040;
   --scale-widget-shadow: rgba(0, 0, 0, 0.3);
@@ -38,7 +35,6 @@
   --scale-btn-active: #606060;
 }
 
-/* Light theme */
 .light-theme {
   --bg-primary: #ffffff;
   --bg-secondary: #f5f5f5;
@@ -48,13 +44,12 @@
   --text-muted: #606060;
   --border-color: #d0d0d0;
   --accent-color: #2563eb;
-  
-  /* More saturated colors for light theme */
-  --card-order-regular: #1d4ed8;    /* Darker blue for better contrast */
-  --card-order-banquet: #d97706;    /* Darker amber for better contrast */
-  --card-reservation-regular: #059669; /* Darker green for better contrast */
-  --card-reservation-live: #dc2626;   /* Darker red for better contrast */
-  
+
+  --card-order-regular: #1d4ed8;
+  --card-order-banquet: #d97706;
+  --card-reservation-regular: #059669;
+  --card-reservation-live: #dc2626;
+
   --scale-widget-bg: #f5f5f5;
   --scale-widget-border: #d0d0d0;
   --scale-widget-shadow: rgba(0, 0, 0, 0.1);
@@ -113,7 +108,6 @@ button:focus-visible {
 #app {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 2rem;
   text-align: center;
 }
 
@@ -130,9 +124,8 @@ button:focus-visible {
   }
 }
 
-/* Mobile Responsive Styles for screens <= 460px */
 @media (max-width: 460px) {
-  /* General mobile adjustments */
+
   body {
     min-width: 280px;
     font-size: 14px;
@@ -144,25 +137,21 @@ button:focus-visible {
     padding: 0.5rem;
   }
 
-  /* Button adjustments for mobile */
   button {
     padding: 0.5rem 1rem;
     font-size: 14px;
     border-radius: 6px;
   }
 
-  /* Card adjustments for mobile */
   .card {
     padding: 1rem;
   }
 
-  /* Heading adjustments for mobile */
   h1 {
     font-size: 2.4em;
     line-height: 1.1;
   }
 
-  /* Header mobile adjustments */
   .header {
     flex-direction: column;
     gap: 1rem;
@@ -197,7 +186,6 @@ button:focus-visible {
     font-size: 14px;
   }
 
-  /* Date and zone sections */
   .date-section,
   .zone-section {
     margin-bottom: 1rem;
@@ -232,7 +220,6 @@ button:focus-visible {
     font-size: 10px;
   }
 
-  /* Instructions */
   .drag-instructions {
     padding: 0.75rem;
     margin: 1rem 0;
@@ -243,14 +230,13 @@ button:focus-visible {
     line-height: 1.4;
   }
 
-  /* Grid adjustments */
   .reservation-grid-container {
     margin: 1rem 0;
     overflow-x: auto;
   }
 
   .table-headers {
-    min-width: 600px; /* Ensure minimum width for scrolling */
+    min-width: 600px;
   }
 
   .table-header-cell {
@@ -281,7 +267,7 @@ button:focus-visible {
   }
 
   .grid-content {
-    min-width: 600px; /* Ensure minimum width for scrolling */
+    min-width: 600px;
   }
 
   .table-cell {
@@ -289,7 +275,6 @@ button:focus-visible {
     height: 40px;
   }
 
-  /* Modal adjustments */
   .modal-overlay {
     padding: 1rem 0.5rem;
   }
@@ -331,7 +316,6 @@ button:focus-visible {
     font-size: 14px;
   }
 
-  /* Scale widget adjustments */
   .scale-widget {
     position: fixed;
     bottom: 1rem;
@@ -351,7 +335,6 @@ button:focus-visible {
     font-size: 12px;
   }
 
-  /* Reservation item adjustments */
   .reservation-item {
     font-size: 10px;
     padding: 0.25rem;
@@ -381,7 +364,6 @@ button:focus-visible {
     font-size: 8px;
   }
 
-  /* Delete button adjustments */
   .delete-button {
     width: 20px;
     height: 20px;

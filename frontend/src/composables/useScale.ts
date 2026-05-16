@@ -4,7 +4,6 @@ const MIN = 0.5;
 const MAX = 3;
 const STEP = 0.08;
 
-/** Масштаб сетки: горизонтальный (столбцы) и вертикальный (временные слоты). */
 export function useScale() {
   const horizontalScale = ref(0.5);
   const verticalScale = ref(0.5);

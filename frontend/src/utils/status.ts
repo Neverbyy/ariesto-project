@@ -1,5 +1,4 @@
-// Локализация статусов заказов и бронирований.
-// Используется в ReservationItem для badge'ей.
+
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
   New: 'Новый',
@@ -22,7 +21,6 @@ export function getReservationStatusLabel(status: string): string {
   return RESERVATION_STATUS_LABELS[status] ?? status;
 }
 
-/** CSS-класс карточки в зависимости от типа и статуса. */
 export function getItemClass(type: 'order' | 'reservation', status: string): string {
   if (type === 'order') {
     if (status === 'Banquet') return 'order-banquet';

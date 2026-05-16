@@ -1,14 +1,5 @@
 import { ref, onMounted, onUpdated, onUnmounted } from 'vue';
 
-/**
- * Реактивный флаг "контент карточки реально не помещается".
- * Меряем `scrollHeight/Width` vs `clientHeight/Width` — то, что физически обрезается
- * `overflow: hidden`, независимо от того, сколько у нас расчётных порогов.
- *
- * Использование:
- *   const { cardEl, hasOverflow } = useCardOverflow();
- *   <div ref="cardEl">...</div>
- */
 export function useCardOverflow() {
   const cardEl = ref<HTMLElement | null>(null);
   const hasOverflow = ref(false);
@@ -31,7 +22,6 @@ export function useCardOverflow() {
     }
   });
 
-  // Контент может меняться без смены габаритов (флаги display) — перепроверяем.
   onUpdated(() => requestAnimationFrame(measure));
 
   onUnmounted(() => {

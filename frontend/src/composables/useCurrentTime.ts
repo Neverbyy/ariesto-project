@@ -1,7 +1,6 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { toMinutes } from '../utils/time';
 
-/** Реактивное «сейчас» в формате ЧЧ:ММ. Обновляется раз в минуту. */
 export function useCurrentTime() {
   const currentTime = ref<string>(formatNow());
   let intervalId: number | null = null;

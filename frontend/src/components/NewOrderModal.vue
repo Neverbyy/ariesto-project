@@ -131,7 +131,6 @@ const blankForm = () => ({
 
 const form = reactive(blankForm());
 
-// Сбрасываем форму при каждом открытии модалки
 watch(() => props.visible, (isOpen) => {
   if (isOpen) Object.assign(form, blankForm(), {
     numPeople: Math.min(props.dragInfo.totalCapacity, 1),

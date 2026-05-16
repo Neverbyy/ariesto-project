@@ -1,8 +1,7 @@
-// Определяем окружение
+
 export const isDevelopment = import.meta.env.DEV;
 export const isProduction = import.meta.env.PROD;
 
-// Автоматически определяем API URL в зависимости от окружения
 export const getApiBaseUrl = () => {
   if (import.meta.env.VITE_API_BASE_URL) {
     return import.meta.env.VITE_API_BASE_URL;
@@ -23,10 +22,10 @@ export const config = {
     timezone: import.meta.env.VITE_TIMEZONE || 'Asia/Vladivostok',
   },
   grid: {
-    timeSlotHeight: 50, // высота временного слота в пикселях
-    timeSlotMinutes: 30, // длительность временного слота в минутах
-    minTableWidth: 0, // минимальная ширина колонки стола (0 для растягивания)
-    timeColumnWidth: 80, // ширина колонки времени
+    timeSlotHeight: 50,
+    timeSlotMinutes: 30,
+    minTableWidth: 0,
+    timeColumnWidth: 80,
   },
   colors: {
     orderNew: '#4caf50',
