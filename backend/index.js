@@ -259,66 +259,66 @@ app.delete('/api/orders/:id', (req, res) => {
   }
 });
 
-const generateMockTables = (date) => {
-  // Базовая конфигурация столов
-  const baseTables = [
-    { id: '1', capacity: 2, number: '5', zone: '1 этаж' },
-    { id: '2', capacity: 2, number: '6', zone: '1 этаж' },
-    { id: '3', capacity: 6, number: '155', zone: '2 этаж' },
-    { id: '4', capacity: 4, number: '20', zone: '1 этаж' },
-    { id: '5', capacity: 6, number: '21', zone: '1 этаж' },
-    { id: '6', capacity: 6, number: '22', zone: '1 этаж' },
-    { id: '7', capacity: 6, number: '23', zone: '1 этаж' },
-    { id: '8', capacity: 6, number: '24', zone: '1 этаж' },
-    { id: '9', capacity: 4, number: '28', zone: '2 этаж' },
-    { id: '10', capacity: 4, number: '29', zone: '2 этаж' },
-    { id: '11', capacity: 6, number: '30', zone: '2 этаж' },
-    { id: '12', capacity: 8, number: '191', zone: 'Банкетный зал' }
-  ];
+// Базовая конфигурация столов (вынесено наружу, чтобы переиспользовать в search-endpoint).
+const BASE_TABLES = [
+  { id: '1', capacity: 2, number: '5', zone: '1 этаж' },
+  { id: '2', capacity: 2, number: '6', zone: '1 этаж' },
+  { id: '3', capacity: 6, number: '155', zone: '2 этаж' },
+  { id: '4', capacity: 4, number: '20', zone: '1 этаж' },
+  { id: '5', capacity: 6, number: '21', zone: '1 этаж' },
+  { id: '6', capacity: 6, number: '22', zone: '1 этаж' },
+  { id: '7', capacity: 6, number: '23', zone: '1 этаж' },
+  { id: '8', capacity: 6, number: '24', zone: '1 этаж' },
+  { id: '9', capacity: 4, number: '28', zone: '2 этаж' },
+  { id: '10', capacity: 4, number: '29', zone: '2 этаж' },
+  { id: '11', capacity: 6, number: '30', zone: '2 этаж' },
+  { id: '12', capacity: 8, number: '191', zone: 'Банкетный зал' }
+];
 
-  return baseTables.map((table) => {
-    
-    // Получаем все элементы (заказы и бронирования) из базы данных для этого стола и даты
+const TABLES_BY_ID = new Map(BASE_TABLES.map((t) => [t.id, t]));
+
+// Item в плоском хранилище → форма Reservation, которую ждёт фронт.
+const itemToReservation = (item, date) => ({
+  id: item.id,
+  name_for_reservation: item.customer_name,
+  num_people: item.num_people,
+  phone_number: item.customer_phone,
+  status: item.status,
+  seating_time: `${date}T${item.start}:00+10:00`,
+  end_time: `${date}T${item.end}:00+10:00`
+});
+
+// Item в плоском хранилище → форма Order. LiveQueue тоже идёт сюда.
+const itemToOrder = (item, date) => ({
+  id: item.id,
+  status: item.status,
+  start_time: `${date}T${item.start}:00+00:00`,
+  end_time: `${date}T${item.end}:00+00:00`,
+  customer_phone: item.customer_phone,
+  num_people: item.num_people,
+  customer_name: item.customer_name
+});
+
+const isReservationStatus = (status) => status === 'Reservation';
+
+const generateMockTables = (date) => {
+  return BASE_TABLES.map((table) => {
     const orders = [];
     const reservations = [];
-    
+
     if (database.orders.has(date)) {
       const dateItems = database.orders.get(date);
-      dateItems.forEach((item, itemId) => {
-        if (item.table_id === table.id) {
-          // Определяем, это заказ или бронирование на основе статуса
-          if (item.status === 'Reservation') {
-                          // Это бронирование
-            reservations.push({
-              id: item.id,
-              name_for_reservation: item.customer_name,
-              num_people: item.num_people,
-              phone_number: item.customer_phone,
-              status: item.status,
-              seating_time: `${date}T${item.start}:00+10:00`,
-              end_time: `${date}T${item.end}:00+10:00`
-            });
-                      } else {
-              // Это заказ (включая LiveQueue)
-            orders.push({
-              id: item.id,
-              status: item.status,
-              start_time: `${date}T${item.start}:00+00:00`,
-              end_time: `${date}T${item.end}:00+00:00`,
-              customer_phone: item.customer_phone,
-              num_people: item.num_people,
-              customer_name: item.customer_name
-            });
-          }
+      dateItems.forEach((item) => {
+        if (item.table_id !== table.id) return;
+        if (isReservationStatus(item.status)) {
+          reservations.push(itemToReservation(item, date));
+        } else {
+          orders.push(itemToOrder(item, date));
         }
       });
     }
-    
-    return {
-      ...table,
-      orders,
-      reservations
-    };
+
+    return { ...table, orders, reservations };
   });
 };
 
@@ -361,40 +361,63 @@ app.get('/api/reservations/:date', (req, res) => {
   }
 });
 
-// GET /api/reservations/search/:query - Поиск бронирований по имени
+// Русские лейблы статусов (продублированы из frontend/src/utils/status.ts;
+// синхронизировать вручную — мапа короткая).
+const STATUS_LABELS_RU = {
+  New: 'Новый',
+  Bill: 'Пречек',
+  Closed: 'Закрытый',
+  Banquet: 'Банкет',
+  Reservation: 'Бронирование',
+  LiveQueue: 'Живая очередь'
+};
+
+const normalizePhone = (s) => (s == null ? '' : String(s).replace(/\D+/g, ''));
+
+const itemMatchesQuery = (item, table, q) => {
+  const lower = q.toLowerCase();
+  const digits = normalizePhone(q);
+
+  if ((item.customer_name || '').toLowerCase().includes(lower)) return true;
+  if (digits.length > 0 && normalizePhone(item.customer_phone).includes(digits)) return true;
+  if ((item.status || '').toLowerCase().includes(lower)) return true;
+  if ((STATUS_LABELS_RU[item.status] || '').toLowerCase().includes(lower)) return true;
+  if (String(table.number).toLowerCase().includes(lower)) return true;
+
+  return false;
+};
+
+// GET /api/reservations/search/:query - Глобальный поиск по всем датам.
+// Возвращает плоский список SearchResult; формат меняется относительно прежнего.
 app.get('/api/reservations/search/:query', (req, res) => {
   try {
     const { query } = req.params;
-    
+
     if (!query || query.trim().length === 0) {
       return res.status(400).json({ error: 'Search query is required' });
     }
-    
-    // Генерируем моковые данные для сегодня
-    const today = new Date().toISOString().split('T')[0];
-    const allTables = generateMockTables(today);
-    
-    // Фильтруем столы, у которых есть бронирования/заказы, соответствующие поисковому запросу
-    const filteredTables = allTables.filter(table => {
-      const hasMatchingReservation = table.reservations.some(reservation => 
-        reservation.name_for_reservation.toLowerCase().includes(query.toLowerCase())
-      );
-      
-      const hasMatchingOrder = table.orders.some(order => 
-        order.status.toLowerCase().includes(query.toLowerCase())
-      );
-      
-      return hasMatchingReservation || hasMatchingOrder;
-    });
-    
-    const response = {
-      available_days: generateAvailableDays(),
-      current_day: today,
-      restaurant: mockRestaurant,
-      tables: filteredTables
-    };
-    
-    res.json(response);
+
+    const results = [];
+
+    for (const [date, dateItems] of database.orders) {
+      dateItems.forEach((item) => {
+        const table = TABLES_BY_ID.get(item.table_id);
+        if (!table) return;
+        if (!itemMatchesQuery(item, table, query)) return;
+
+        const isReservation = isReservationStatus(item.status);
+        results.push({
+          date,
+          kind: isReservation ? 'reservation' : 'order',
+          tableId: table.id,
+          tableNumber: table.number,
+          zone: table.zone,
+          item: isReservation ? itemToReservation(item, date) : itemToOrder(item, date)
+        });
+      });
+    }
+
+    res.json({ results });
   } catch (error) {
     console.error('Error searching reservations:', error);
     res.status(500).json({ error: 'Internal server error' });

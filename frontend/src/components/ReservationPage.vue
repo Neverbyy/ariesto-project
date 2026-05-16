@@ -4,7 +4,6 @@
       :restaurant-name="restaurant?.restaurant_name"
       v-model:search-query="searchQuery"
       :is-dark-theme="isDarkTheme"
-      @search="handleSearch"
       @toggle-theme="toggleTheme"
     />
 
@@ -25,6 +24,29 @@
         @toggle="toggleZone"
       />
 
+      <div
+        v-if="isSearchActive && !searchResultsQuery.isFetching.value && totalCount === 0"
+        class="search-info search-info--empty"
+      >
+        Ничего не найдено по запросу «{{ debouncedQuery }}»
+      </div>
+
+      <div
+        v-else-if="isSearchActive && otherDates.length > 0"
+        class="search-info"
+      >
+        <span class="search-info__label">Ещё {{ totalOther }} {{ pluralizeMatches(totalOther) }} в других датах:</span>
+        <button
+          v-for="d in otherDates"
+          :key="d.date"
+          type="button"
+          class="date-chip"
+          @click="selectDate(d.date)"
+        >
+          {{ d.date }} ({{ d.count }})
+        </button>
+      </div>
+
       <div class="drag-instructions">
         <div class="instruction-icon">💡</div>
         <div class="instruction-text">
@@ -44,6 +66,8 @@
         :is-today="isToday"
         :current-minutes="currentMinutes"
         :current-time="currentTime"
+        :matched-ids="matchedIds"
+        :is-search-active="isSearchActive"
         @item-click="handleItemClick"
         @item-delete="handleItemDelete"
         @drag-complete="openCreateModal"
@@ -79,6 +103,8 @@ import { useSelectedZones } from '../composables/useSelectedZones';
 import { useScale } from '../composables/useScale';
 import { useTimeSlots } from '../composables/useTimeSlots';
 import { useCurrentTime } from '../composables/useCurrentTime';
+import { useDebouncedRef } from '../composables/useDebouncedRef';
+import { useSearchHighlight } from '../composables/useSearchHighlight';
 import { todayISO } from '../utils/time';
 import ReservationHeader from './ReservationHeader.vue';
 import DateSelector from './DateSelector.vue';
@@ -92,7 +118,7 @@ const zones: string[] = ['1 этаж', '2 этаж', 'Банкетный зал'
 
 const selectedDate = ref<string>(todayISO());
 const searchQuery = ref<string>('');
-const submittedSearch = ref<string>('');
+const debouncedQuery = useDebouncedRef(searchQuery, 550);
 const selectedOrder = ref<TableItem | null>(null);
 
 const { isDarkTheme, toggleTheme } = useTheme();
@@ -103,23 +129,34 @@ const isToday = computed(() => selectedDate.value === todayISO());
 
 // Запросы Vue Query
 const reservationsQuery = useReservationsByDate(selectedDate);
-const searchQueryResult = useSearchReservations(submittedSearch);
+const searchResultsQuery = useSearchReservations(debouncedQuery);
 const createOrderMutation = useCreateOrder(selectedDate);
 const deleteOrderMutation = useDeleteOrder(selectedDate);
 
-// Источник данных: поиск, если активен, иначе по дате
-const reservationData = computed(() =>
-  submittedSearch.value.trim()
-    ? searchQueryResult.data.value ?? null
-    : reservationsQuery.data.value ?? null,
-);
+// Источник данных грида — всегда по дате; поиск только подсвечивает поверх.
+const reservationData = computed(() => reservationsQuery.data.value ?? null);
+
+const searchResults = computed(() => searchResultsQuery.data.value?.results ?? []);
+
+const { isSearchActive, matchedIds, otherDates, totalCount, totalOther } = useSearchHighlight({
+  results: searchResults,
+  selectedDate,
+  query: debouncedQuery,
+});
 
 const isLoading = computed(() =>
   reservationsQuery.isFetching.value
-  || searchQueryResult.isFetching.value
   || createOrderMutation.isPending.value
   || deleteOrderMutation.isPending.value,
 );
+
+const pluralizeMatches = (n: number): string => {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'совпадение';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'совпадения';
+  return 'совпадений';
+};
 
 const restaurant = computed(() => reservationData.value?.restaurant);
 const availableDays = computed(() => reservationData.value?.available_days ?? []);
@@ -160,16 +197,10 @@ const createNewOrder = (payload: CreateOrderPayload) => {
 
 // --- Прочие обработчики ---
 
+// Поиск не сбрасываем — пользователь может переключиться на другую дату,
+// чтобы увидеть подсветку совпадений из чипов "ещё совпадения в других датах".
 const selectDate = (date: string) => {
-  // Сбрасываем поиск, чтобы вернуться к виду по дате
-  submittedSearch.value = '';
-  searchQuery.value = '';
   selectedDate.value = date;
-};
-
-const handleSearch = () => {
-  // Пустая строка отключит запрос поиска и вернёт вид по дате
-  submittedSearch.value = searchQuery.value.trim();
 };
 
 const handleItemClick = (item: TableItem) => {
@@ -223,6 +254,39 @@ const handleItemDelete = (item: TableItem) => {
 .instruction-icon { font-size: 1.5rem; flex-shrink: 0; }
 .instruction-text { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.4; }
 .instruction-text strong { color: var(--text-primary); }
+
+.search-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.search-info--empty { color: var(--text-secondary); }
+
+.search-info__label { color: var(--text-primary); font-weight: 500; }
+
+.date-chip {
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.date-chip:hover {
+  border-color: var(--card-reservation-regular);
+  background-color: color-mix(in srgb, var(--card-reservation-regular) 15%, transparent);
+}
 
 @media (max-width: 460px) {
   .reservation-page { min-width: 280px; }

@@ -4,16 +4,17 @@
       <h1 class="brand">AIRESTO | {{ restaurantName || 'Супра' }}</h1>
     </div>
     <div class="header-right">
-      <div class="search-bar">
-        <span class="search-icon">🔍</span>
-        <input
-          :value="searchQuery"
-          type="text"
-          placeholder="Поиск заказов"
-          @input="(e) => emit('update:searchQuery', (e.target as HTMLInputElement).value)"
-          @keyup.enter="emit('search')"
-        />
-      </div>
+      <AInput
+        class="search-bar"
+        :value="searchQuery"
+        placeholder="Поиск заказов"
+        allow-clear
+        @update:value="(v: string) => emit('update:searchQuery', v)"
+      >
+        <template #prefix>
+          <SearchOutlined />
+        </template>
+      </AInput>
       <button class="theme-toggle" @click="emit('toggle-theme')">
         {{ isDarkTheme ? '☀️' : '🌙' }}
       </button>
@@ -26,6 +27,9 @@
 </template>
 
 <script setup lang="ts">
+import { Input as AInput } from 'ant-design-vue';
+import { SearchOutlined } from '@ant-design/icons-vue';
+
 defineProps<{
   restaurantName?: string | null;
   searchQuery: string;
@@ -34,7 +38,6 @@ defineProps<{
 
 const emit = defineEmits<{
   'update:searchQuery': [value: string];
-  search: [];
   'toggle-theme': [];
 }>();
 </script>
@@ -66,27 +69,7 @@ const emit = defineEmits<{
 }
 
 .search-bar {
-  display: flex;
-  align-items: center;
-  background-color: var(--bg-tertiary);
-  border-radius: 6px;
-  padding: 0.5rem 1rem;
-}
-
-.search-icon {
-  margin-right: 0.5rem;
-}
-
-.search-bar input {
-  background: none;
-  border: none;
-  color: #ffffff;
-  outline: none;
-  width: 200px;
-}
-
-.search-bar input::placeholder {
-  color: #a0a0a0;
+  width: 260px;
 }
 
 .theme-toggle {
@@ -133,8 +116,7 @@ const emit = defineEmits<{
     width: 100%;
   }
 
-  .search-bar { width: 100%; max-width: none; }
-  .search-bar input { font-size: 14px; padding: 0.5rem; width: 100%; }
+  .search-bar { width: 100%; }
   .theme-toggle, .exit-btn { width: 100%; padding: 0.5rem; font-size: 14px; }
 }
 </style>

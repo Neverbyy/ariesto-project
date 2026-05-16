@@ -55,6 +55,8 @@
                   :is-selected="!!(selectedOrder && selectedOrder.id === item.id)"
                   :is-today="isToday"
                   :current-minutes="currentMinutes"
+                  :is-search-active="isSearchActive"
+                  :is-search-match="!!(isSearchActive && matchedIds?.has(item.id))"
                   @click="emit('item-click', item)"
                   @delete="emit('item-delete', item)"
                 />
@@ -94,6 +96,8 @@ const props = defineProps<{
   isToday: boolean;
   currentMinutes: number;
   currentTime: string;
+  matchedIds?: Set<string>;
+  isSearchActive?: boolean;
 }>();
 
 const emit = defineEmits<{

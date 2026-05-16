@@ -1,4 +1,4 @@
-import type { ReservationData, TableItem } from '../types/reservation';
+import type { ReservationData, SearchResponse, TableItem } from '../types/reservation';
 import { config } from '../config';
 
 export class ReservationApiService {
@@ -18,7 +18,7 @@ export class ReservationApiService {
     return await response.json();
   }
 
-  async searchReservations(query: string): Promise<ReservationData> {
+  async searchReservations(query: string): Promise<SearchResponse> {
     const response = await fetch(`${this.baseUrl}/api/reservations/search/${encodeURIComponent(query)}`);
 
     if (!response.ok) {

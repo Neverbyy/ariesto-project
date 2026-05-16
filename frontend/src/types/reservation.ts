@@ -87,3 +87,16 @@ export interface TableItem {
   table_id?: string;
   tables?: string[];
 }
+
+export interface SearchResult {
+  date: string;
+  kind: 'order' | 'reservation';
+  tableId: string;
+  tableNumber: string;
+  zone: string;
+  item: Order | Reservation;
+}
+
+export interface SearchResponse {
+  results: SearchResult[];
+}

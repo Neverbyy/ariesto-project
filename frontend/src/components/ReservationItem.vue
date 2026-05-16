@@ -2,7 +2,13 @@
   <ReservationItemTooltip :lines="tooltipLines">
     <div
       ref="cardEl"
-      :class="['reservation-item', itemClass, { hovered: isHovered, selected: isSelected, 'past-item': isPast }]"
+      :class="['reservation-item', itemClass, {
+        hovered: isHovered,
+        selected: isSelected,
+        'past-item': isPast,
+        'search-match': isSearchMatch,
+        'search-dimmed': isSearchActive && !isSearchMatch,
+      }]"
       :style="itemStyle"
       :data-scale="verticalScale"
       :data-duration="durationClass"
@@ -60,6 +66,8 @@ interface Props {
   isSelected?: boolean;
   isToday?: boolean;
   currentMinutes?: number;
+  isSearchActive?: boolean;
+  isSearchMatch?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -165,6 +173,16 @@ const handleDelete = () => {
 .reservation-item.selected {
   border: 2px solid #ef4444;
   box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+}
+
+.reservation-item.search-dimmed {
+  opacity: 0.25;
+  transition: opacity 0.2s ease;
+}
+
+.reservation-item.search-match {
+  box-shadow: 0 0 0 2px var(--accent-search, #facc15), 0 6px 16px rgba(0, 0, 0, 0.35);
+  z-index: 2000;
 }
 
 .delete-button {

@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/vue-query'
 import type { MaybeRef } from 'vue'
 import { unref, h } from 'vue'
 import { App as AntApp } from 'ant-design-vue'
@@ -31,7 +31,9 @@ export function useSearchReservations(query: MaybeRef<string>) {
   return useQuery({
     queryKey: ['reservations', 'search', query],
     queryFn: () => reservationApi.searchReservations(unref(query)),
-    enabled: () => !!unref(query).trim(),
+    enabled: () => unref(query).trim().length > 0,
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
   })
 }
 
