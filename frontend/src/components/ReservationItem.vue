@@ -85,7 +85,7 @@ const statusLabel = computed(() =>
     : getReservationStatusLabel(props.item.status),
 );
 
-const { cardEl, hasOverflow } = useCardOverflow();
+const { hasOverflow } = useCardOverflow();
 
 const { durationClass, isPast, itemStyle, timeText } = useCardGeometry({
   item: toRef(props, 'item'),
