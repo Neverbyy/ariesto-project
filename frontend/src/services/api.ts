@@ -9,30 +9,22 @@ export class ReservationApiService {
   }
 
   async getReservations(date: string): Promise<ReservationData> {
-    const timestamp = Date.now();
-    const random = Math.random();
-    const response = await fetch(`${this.baseUrl}/api/reservations/${date}?_t=${timestamp}&_r=${random}`, {
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
-    });
-    
+    const response = await fetch(`${this.baseUrl}/api/reservations/${date}`);
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     return await response.json();
   }
 
   async searchReservations(query: string): Promise<ReservationData> {
     const response = await fetch(`${this.baseUrl}/api/reservations/search/${encodeURIComponent(query)}`);
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     return await response.json();
   }
 
@@ -49,36 +41,28 @@ export class ReservationApiService {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
       },
-      body: JSON.stringify(orderData)
+      body: JSON.stringify(orderData),
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
     }
-    
+
     return await response.json();
   }
 
   async deleteOrder(orderId: string): Promise<{ success: boolean; message: string }> {
     const response = await fetch(`${this.baseUrl}/api/orders/${orderId}`, {
       method: 'DELETE',
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
     }
-    
+
     return await response.json();
   }
 }
