@@ -31,8 +31,8 @@
           <div class="item-title">{{ fields.title }}</div>
           <div class="time-display">{{ fields.time }}</div>
           <div class="status-badge">{{ fields.badge }}</div>
-          <div v-if="display.showExtra && (fields.phoneShort || fields.people)" class="hover-extra compact">
-            <div v-if="fields.phoneShort && display.showPhone" class="extra-line">📞 {{ fields.phoneShort }}</div>
+          <div v-if="display.showExtra && (fields.phone || fields.people)" class="hover-extra compact">
+            <div v-if="fields.phone && display.showPhone" class="extra-line">📞 {{ fields.phone }}</div>
             <div v-if="fields.people && display.showPeople" class="extra-line">{{ fields.people }}</div>
           </div>
         </template>

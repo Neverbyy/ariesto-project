@@ -17,7 +17,6 @@ export interface OrderFields extends BaseFields {
 export interface ReservationFields extends BaseFields {
   type: 'reservation';
   phone: string;
-  phoneShort: string;
 }
 
 export type CardFields = OrderFields | ReservationFields;
@@ -79,7 +78,6 @@ export function useCardFields(params: UseCardFieldsParams): UseCardFieldsReturn 
       time: timeText.value,
       people,
       phone,
-      phoneShort: phone.slice(-4),
     };
   });
 
