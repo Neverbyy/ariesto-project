@@ -39,6 +39,8 @@ export interface UseDragToCreateOptions {
   verticalScale: Ref<number>;
   /** Должна возвращать true, если в ячейке уже есть элементы — drag отменяется. */
   isCellOccupied: (table: Table, timeSlot: string) => boolean;
+  /** Должна возвращать true, если слот полностью в прошлом — drag запрещён. */
+  isPastSlot?: (timeSlot: string) => boolean;
   onComplete: (payload: DragCompletePayload) => void;
 }
 
@@ -76,6 +78,7 @@ export function useDragToCreate(opts: UseDragToCreateOptions) {
 
   const handleMouseDown = (event: MouseEvent, table: Table, timeSlot: string) => {
     if (event.button !== 0) return;
+    if (opts.isPastSlot?.(timeSlot)) return;
     event.preventDefault();
 
     isDragging.value = true;
@@ -98,6 +101,12 @@ export function useDragToCreate(opts: UseDragToCreateOptions) {
 
     // Если в ячейке уже что-то есть — прерываем drag
     if (opts.isCellOccupied(table, timeSlot)) {
+      reset();
+      return;
+    }
+
+    // Затаскивание курсора в прошлый слот — прерываем drag
+    if (opts.isPastSlot?.(timeSlot)) {
       reset();
       return;
     }
@@ -160,6 +169,8 @@ export function useDragToCreate(opts: UseDragToCreateOptions) {
   const isTableSelected = (table: Table): boolean =>
     dragData.value.selectedTables.some((t) => t.id === table.id);
 
+  const isPastSlot = (timeSlot: string): boolean => opts.isPastSlot?.(timeSlot) ?? false;
+
   return {
     isDragging,
     dragData,
@@ -167,5 +178,6 @@ export function useDragToCreate(opts: UseDragToCreateOptions) {
     handleMouseEnter,
     isInDragRange,
     isTableSelected,
+    isPastSlot,
   };
 }

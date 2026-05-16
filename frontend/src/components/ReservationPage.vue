@@ -41,6 +41,9 @@
         :vertical-scale="verticalScale"
         :selected-order="selectedOrder"
         :is-loading="isLoading"
+        :is-today="isToday"
+        :current-minutes="currentMinutes"
+        :current-time="currentTime"
         @item-click="handleItemClick"
         @item-delete="handleItemDelete"
         @drag-complete="openCreateModal"
@@ -75,6 +78,7 @@ import { useTheme } from '../composables/useTheme';
 import { useSelectedZones } from '../composables/useSelectedZones';
 import { useScale } from '../composables/useScale';
 import { useTimeSlots } from '../composables/useTimeSlots';
+import { useCurrentTime } from '../composables/useCurrentTime';
 import { todayISO } from '../utils/time';
 import ReservationHeader from './ReservationHeader.vue';
 import DateSelector from './DateSelector.vue';
@@ -94,6 +98,8 @@ const selectedOrder = ref<TableItem | null>(null);
 const { isDarkTheme, toggleTheme } = useTheme();
 const { selectedZones, toggleZone } = useSelectedZones(zones, ['1 этаж', '2 этаж']);
 const { horizontalScale, verticalScale, increaseScale, decreaseScale } = useScale();
+const { currentTime, currentMinutes } = useCurrentTime();
+const isToday = computed(() => selectedDate.value === todayISO());
 
 // Запросы Vue Query
 const reservationsQuery = useReservationsByDate(selectedDate);

@@ -1,6 +1,6 @@
 <template>
   <div
-    :class="['reservation-item', itemClass, { hovered: isHovered, selected: isSelected }]"
+    :class="['reservation-item', itemClass, { hovered: isHovered, selected: isSelected, 'past-item': isPast }]"
     :style="itemStyle"
     :data-scale="verticalScale"
     :data-duration="durationClass"
@@ -49,7 +49,7 @@
 import { computed, ref } from 'vue';
 import { App as AntApp } from 'ant-design-vue';
 import type { TableItem } from '../types/reservation';
-import { extractTimeFromISO, durationMinutes } from '../utils/time';
+import { extractTimeFromISO, durationMinutes, toMinutes } from '../utils/time';
 import { getOrderStatusLabel, getReservationStatusLabel, getItemClass } from '../utils/status';
 
 interface GridItem extends TableItem {
@@ -64,6 +64,8 @@ interface Props {
   timeSlot: string;
   verticalScale: number;
   isSelected?: boolean;
+  isToday?: boolean;
+  currentMinutes?: number;
 }
 
 const props = defineProps<Props>();
@@ -98,6 +100,13 @@ const durationClass = computed(() => {
   if (duration.value < 60) return 'short';
   if (duration.value < 120) return 'medium';
   return 'long';
+});
+
+// Полностью прошедший заказ — серый. Только когда смотрим сегодня.
+const isPast = computed(() => {
+  if (!props.isToday || props.currentMinutes === undefined) return false;
+  if (!endTime.value) return false;
+  return toMinutes(endTime.value) <= props.currentMinutes;
 });
 
 const statusLabel = computed(() =>
@@ -359,6 +368,14 @@ const handleDelete = () => {
   border-left: 4px solid var(--card-reservation-regular);
 }
 
+/* Прошедшие заказы (end_time <= сейчас) — серые. Перекрываем цветной фон. */
+.reservation-item.past-item {
+  background-color: rgba(140, 140, 140, 0.18) !important;
+  border-left: 4px solid #8a8a8a !important;
+  color: var(--text-muted);
+  box-shadow: none !important;
+}
+
 /* Светлая тема: усиленный контраст */
 :global(.light-theme) .order-regular {
   background-color: color-mix(in srgb, var(--card-order-regular) 35%, transparent);
@@ -384,6 +401,11 @@ const handleDelete = () => {
   background-color: color-mix(in srgb, var(--card-reservation-regular) 35%, transparent);
   border-left: 5px solid var(--card-reservation-regular);
   box-shadow: 0 2px 8px rgba(5, 150, 105, 0.15);
+}
+:global(.light-theme) .reservation-item.past-item {
+  background-color: rgba(150, 150, 150, 0.22) !important;
+  border-left: 5px solid #9a9a9a !important;
+  box-shadow: none !important;
 }
 
 @media (max-width: 460px) {

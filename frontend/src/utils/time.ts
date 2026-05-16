@@ -24,7 +24,7 @@ export function extractTimeFromISO(isoString: string): string {
 }
 
 /** Переводит ЧЧ:ММ в число минут от полуночи. */
-function toMinutes(time: string): number {
+export function toMinutes(time: string): number {
   const [h, m] = time.split(':').map(Number);
   return h * 60 + m;
 }
