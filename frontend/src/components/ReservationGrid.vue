@@ -80,9 +80,9 @@ import ReservationItem from './ReservationItem.vue';
 import { useDragToCreate, type DragCompletePayload } from '../composables/useDragToCreate';
 import { getItemsForTableAndTime } from '../utils/tableItems';
 import { toMinutes } from '../utils/time';
+import { config } from '../config';
 
-const BASE_SLOT_HEIGHT = 50;
-const MINUTES_PER_SLOT = 30;
+const { timeSlotHeight: BASE_SLOT_HEIGHT, timeSlotMinutes: MINUTES_PER_SLOT } = config.grid;
 
 const props = defineProps<{
   tables: Table[];

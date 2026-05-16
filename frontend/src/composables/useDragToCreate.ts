@@ -1,9 +1,9 @@
 import { ref, type Ref } from 'vue';
 import type { Table } from '../types/reservation';
+import { config } from '../config';
 
-const BASE_TIME_SLOT_HEIGHT = 50;
+const { timeSlotHeight: BASE_TIME_SLOT_HEIGHT, timeSlotMinutes: MINUTES_PER_SLOT } = config.grid;
 const DIRECTION_THRESHOLD = 20;
-const MINUTES_PER_SLOT = 30;
 
 interface DragState {
   table: Table | null;

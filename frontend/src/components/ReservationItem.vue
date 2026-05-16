@@ -1,63 +1,57 @@
 <template>
-  <div
-    :class="['reservation-item', itemClass, { hovered: isHovered, selected: isSelected, 'past-item': isPast }]"
-    :style="itemStyle"
-    :data-scale="verticalScale"
-    :data-duration="durationClass"
-    @click="emit('click', props.item)"
-    @mouseenter="isHovered = true"
-    @mouseleave="isHovered = false"
-  >
-    <div class="item-content">
-      <template v-if="isOrder">
-        <div class="item-title">Заказ</div>
-        <div class="status-badge">{{ statusLabel }}</div>
-        <div class="time-display">{{ timeText }}</div>
-        <div class="hover-extra compact" v-if="display.showExtra">
-          <div class="customer-info" v-if="(orderCustomerName && display.showCustomer) || (orderPeopleText && display.showPeople)">
-            <span v-if="orderCustomerName && display.showCustomer">{{ orderCustomerName }}</span>
-            <span v-if="orderCustomerName && display.showCustomer && orderPeopleText && display.showPeople">; </span>
-            <span v-if="orderPeopleText && display.showPeople">{{ orderPeopleText }}</span>
-          </div>
-          <div class="phone-text" v-if="orderPhoneFull && display.showPhone">📞 {{ orderPhoneFull }}</div>
-        </div>
-      </template>
-
-      <template v-else>
-        <div class="item-title">{{ props.item.name_for_reservation }}</div>
-        <div class="time-display">{{ timeText }}</div>
-        <div class="status-badge">{{ statusLabel }}</div>
-        <div class="hover-extra compact" v-if="phoneSuffix || reservationPeopleText">
-          <div class="phone-text" v-if="phoneSuffix">📞 {{ phoneSuffix }}</div>
-          <div class="people-text" v-if="reservationPeopleText">{{ reservationPeopleText }}</div>
-        </div>
-      </template>
-    </div>
-
+  <ReservationItemTooltip :lines="tooltipLines">
     <div
-      v-if="isSelected"
-      class="delete-button"
-      :title="deleteButtonTitle"
-      @click.stop="handleDelete"
+      ref="cardEl"
+      :class="['reservation-item', itemClass, { hovered: isHovered, selected: isSelected, 'past-item': isPast }]"
+      :style="itemStyle"
+      :data-scale="verticalScale"
+      :data-duration="durationClass"
+      @click="emit('click', props.item)"
+      @mouseenter="isHovered = true"
+      @mouseleave="isHovered = false"
     >
-      ✖
+      <div class="item-content">
+        <template v-if="fields.type === 'order'">
+          <div class="item-title">{{ fields.title }}</div>
+          <div class="status-badge">{{ fields.badge }}</div>
+          <div class="time-display">{{ fields.time }}</div>
+          <div v-if="display.showExtra" class="hover-extra compact">
+            <div v-if="customerLine" class="extra-line">{{ customerLine }}</div>
+            <div v-if="fields.phone && display.showPhone" class="extra-line">📞 {{ fields.phone }}</div>
+          </div>
+        </template>
+
+        <template v-else>
+          <div class="item-title">{{ fields.title }}</div>
+          <div class="time-display">{{ fields.time }}</div>
+          <div class="status-badge">{{ fields.badge }}</div>
+          <div v-if="display.showExtra && (fields.phoneShort || fields.people)" class="hover-extra compact">
+            <div v-if="fields.phoneShort && display.showPhone" class="extra-line">📞 {{ fields.phoneShort }}</div>
+            <div v-if="fields.people && display.showPeople" class="extra-line">{{ fields.people }}</div>
+          </div>
+        </template>
+      </div>
+
+      <div
+        v-if="isSelected"
+        class="delete-button"
+        :title="deleteButtonTitle"
+        @click.stop="handleDelete"
+      >✖</div>
     </div>
-  </div>
+  </ReservationItemTooltip>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, toRef } from 'vue';
 import { App as AntApp } from 'ant-design-vue';
 import type { TableItem } from '../types/reservation';
-import { extractTimeFromISO, durationMinutes, toMinutes } from '../utils/time';
 import { getOrderStatusLabel, getReservationStatusLabel, getItemClass } from '../utils/status';
-
-interface GridItem extends TableItem {
-  type: 'order' | 'reservation';
-  startTime?: string;
-  endTime?: string;
-  overlapIndex?: number;
-}
+import { useCardOverflow } from '../composables/useCardOverflow';
+import { useCardGeometry } from '../composables/useCardGeometry';
+import { useCardFields } from '../composables/useCardFields';
+import type { GridItem } from '../utils/tableItems';
+import ReservationItemTooltip from './ReservationItemTooltip.vue';
 
 interface Props {
   item: GridItem;
@@ -69,120 +63,47 @@ interface Props {
 }
 
 const props = defineProps<Props>();
-
 const emit = defineEmits<{
   click: [item: TableItem];
   delete: [item: TableItem];
 }>();
 
-const BASE_SLOT_HEIGHT = 50;
-const MINUTES_PER_SLOT = 30;
-
 const isHovered = ref(false);
 const isOrder = computed(() => props.item.type === 'order');
-
 const itemClass = computed(() => getItemClass(props.item.type, props.item.status));
-
-// Время начала/конца карточки (для order — start_time, для reservation — seating_time)
-const startTime = computed(() => extractTimeFromISO(
-  isOrder.value ? (props.item.start_time || '') : (props.item.seating_time || ''),
-));
-const endTime = computed(() => extractTimeFromISO(props.item.end_time || ''));
-const timeText = computed(() => `${startTime.value}-${endTime.value}`);
-
-const duration = computed(() => {
-  if (!startTime.value || !endTime.value) return 0;
-  return durationMinutes(startTime.value, endTime.value);
-});
-
-const durationClass = computed(() => {
-  if (!isOrder.value) return '';
-  if (duration.value < 60) return 'short';
-  if (duration.value < 120) return 'medium';
-  return 'long';
-});
-
-// Полностью прошедший заказ — серый. Только когда смотрим сегодня.
-const isPast = computed(() => {
-  if (!props.isToday || props.currentMinutes === undefined) return false;
-  if (!endTime.value) return false;
-  return toMinutes(endTime.value) <= props.currentMinutes;
-});
-
 const statusLabel = computed(() =>
   isOrder.value
     ? getOrderStatusLabel(props.item.status)
     : getReservationStatusLabel(props.item.status),
 );
 
-// Геометрия карточки
-const itemStyle = computed(() => {
-  if (!startTime.value || !endTime.value) {
-    return { height: '50px', top: '0px', marginLeft: '0px', zIndex: 10 };
-  }
+const { cardEl, hasOverflow } = useCardOverflow();
 
-  const [startH, startM] = startTime.value.split(':').map(Number);
-  const [endH, endM] = endTime.value.split(':').map(Number);
-  const [slotH, slotM] = props.timeSlot.split(':').map(Number);
-
-  const startMinutes = startH * 60 + startM;
-  const endMinutes = endH * 60 + endM;
-  const slotMinutes = slotH * 60 + slotM;
-  const durationValue = endMinutes - startMinutes;
-
-  const slotHeight = BASE_SLOT_HEIGHT * props.verticalScale;
-  const topOffset = startMinutes > slotMinutes
-    ? Math.floor((startMinutes - slotMinutes) / MINUTES_PER_SLOT) * slotHeight
-    : 0;
-  const slotsCount = Math.max(1, Math.ceil((durationValue + 1) / MINUTES_PER_SLOT));
-  const overlapOffset = (props.item.overlapIndex ?? 0) * 10;
-  const baseZ = 10 + startMinutes + (props.item.overlapIndex ?? 0);
-
-  return {
-    height: `${slotsCount * slotHeight}px`,
-    top: `${topOffset}px`,
-    marginLeft: `${overlapOffset}px`,
-    zIndex: isHovered.value ? 2000 : baseZ,
-  };
+const { durationClass, isPast, itemStyle, timeText } = useCardGeometry({
+  item: toRef(props, 'item'),
+  timeSlot: toRef(props, 'timeSlot'),
+  verticalScale: toRef(props, 'verticalScale'),
+  isHovered,
+  isToday: toRef(props, 'isToday'),
+  currentMinutes: toRef(props, 'currentMinutes'),
+  isOrder,
 });
 
-// Расчёт высоты карточки в пикселях, чтобы понять — что помещается
 const itemHeightPx = computed(() => parseInt(String(itemStyle.value.height)) || 0);
 
-// Какие блоки информации показывать на карточке (только для заказов и не на минимальном масштабе)
-const display = computed(() => {
-  if (!isOrder.value || props.verticalScale <= 0.5) {
-    return { showExtra: false, showCustomer: false, showPhone: false, showPeople: false };
-  }
-  const h = itemHeightPx.value;
-  return {
-    showExtra: h >= 60,
-    showCustomer: h >= 75,
-    showPhone: h >= 70,
-    showPeople: h >= 65,
-  };
+const { fields, display, customerLine, tooltipLines } = useCardFields({
+  item: toRef(props, 'item'),
+  isOrder,
+  statusLabel,
+  timeText,
+  itemHeightPx,
+  hasOverflow,
 });
-
-// Поля карточки для заказа
-const orderCustomerName = computed(() => isOrder.value ? (props.item.customer_name || '') : '');
-const orderPhoneFull = computed(() => isOrder.value ? (props.item.customer_phone || '') : '');
-const orderPeopleText = computed(() =>
-  isOrder.value && props.item.num_people ? `${props.item.num_people} чел` : '',
-);
-
-// Поля карточки для бронирования
-const reservationPeopleText = computed(() =>
-  !isOrder.value ? `${props.item.num_people} чел` : '',
-);
-const phoneSuffix = computed(() =>
-  !isOrder.value ? String(props.item.phone_number ?? '').slice(-4) : '',
-);
 
 const deleteButtonTitle = computed(() =>
   isOrder.value ? 'Удалить заказ' : 'Удалить бронирование',
 );
 
-// modal из useApp() подхватывает тему из ConfigProvider
 const { modal } = AntApp.useApp();
 
 const handleDelete = () => {
@@ -218,6 +139,22 @@ const handleDelete = () => {
   box-sizing: border-box;
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
+
+  /* Дизайн-токены карточки. Переопределяются в [data-duration], [data-scale] и @media ниже. */
+  --card-title-size: 0.85rem;
+  --card-title-line: 1.1;
+  --card-title-mt: 0;
+  --card-badge-size: 0.65rem;
+  --card-badge-padding: 0.05rem 0.3rem;
+  --card-badge-margin: 0;
+  --card-time-size: 0.8rem;
+  --card-time-line: 1.1;
+  --card-time-mb: 0;
+  --card-extra-size: 0.7rem;
+  --card-extra-line: normal;
+  --card-content-gap: 0.35rem;
+  --card-content-padding: 0;
+  --card-content-justify: flex-start;
 }
 
 .reservation-item.hovered {
@@ -261,10 +198,11 @@ const handleDelete = () => {
 .item-content {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: var(--card-content-gap);
+  padding: var(--card-content-padding);
   align-items: flex-start;
   text-align: left;
-  justify-content: flex-start;
+  justify-content: var(--card-content-justify);
 }
 
 .item-title {
@@ -272,17 +210,18 @@ const handleDelete = () => {
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 600;
-  font-size: 0.85rem;
-  line-height: 1.1;
-  margin: 0;
+  font-size: var(--card-title-size);
+  line-height: var(--card-title-line);
+  margin: var(--card-title-mt) 0 0 0;
 }
 
 .status-badge {
   background-color: rgba(74, 74, 74, .9);
   color: #ffffff;
-  padding: 0.05rem 0.3rem;
+  padding: var(--card-badge-padding);
+  margin: var(--card-badge-margin) 0;
   border-radius: 3px;
-  font-size: 0.65rem;
+  font-size: var(--card-badge-size);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -299,9 +238,9 @@ const handleDelete = () => {
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 600;
-  font-size: 0.8rem;
-  line-height: 1.1;
-  margin: 0;
+  font-size: var(--card-time-size);
+  line-height: var(--card-time-line);
+  margin: 0 0 var(--card-time-mb) 0;
 }
 
 .hover-extra {
@@ -313,36 +252,52 @@ const handleDelete = () => {
 
 .hover-extra.compact { gap: 4px; margin-top: 1px; }
 
-.customer-info,
-.people-text,
-.phone-text {
+.extra-line {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 0.7rem;
+  font-size: var(--card-extra-size);
+  line-height: var(--card-extra-line);
   opacity: 0.95;
   margin: 0;
 }
 
 /* Короткие заказы (< 60 мин) */
-.reservation-item[data-duration="short"] .item-content {
-  justify-content: space-between;
-  padding: 2px 0;
+.reservation-item[data-duration="short"] {
+  --card-content-padding: 2px 0;
+  --card-content-justify: space-between;
+  --card-title-size: 0.8rem;
+  --card-title-line: 1;
+  --card-title-mt: 1px;
+  --card-badge-size: 0.6rem;
+  --card-badge-padding: 0.03rem 0.25rem;
+  --card-badge-margin: 1px;
+  --card-time-size: 0.75rem;
+  --card-time-line: 1;
+  --card-time-mb: 1px;
 }
-.reservation-item[data-duration="short"] .item-title { font-size: 0.8rem; line-height: 1; margin-top: 1px; }
-.reservation-item[data-duration="short"] .status-badge { font-size: 0.6rem; padding: 0.03rem 0.25rem; margin: 1px 0; }
-.reservation-item[data-duration="short"] .time-display { font-size: 0.75rem; line-height: 1; margin-bottom: 1px; }
 
 /* Минимальный масштаб */
-.reservation-item[data-scale="0.5"] .item-title { font-size: 0.8rem; line-height: 1; }
-.reservation-item[data-scale="0.5"] .status-badge { font-size: 0.6rem; padding: 0.03rem 0.25rem; }
-.reservation-item[data-scale="0.5"] .time-display { font-size: 0.75rem; line-height: 1; }
+.reservation-item[data-scale="0.5"] {
+  --card-title-size: 0.8rem;
+  --card-title-line: 1;
+  --card-badge-size: 0.6rem;
+  --card-badge-padding: 0.03rem 0.25rem;
+  --card-time-size: 0.75rem;
+  --card-time-line: 1;
+}
 
 /* Короткий + минимальный масштаб */
-.reservation-item[data-scale="0.5"][data-duration="short"] .item-content { padding: 1px 0; }
-.reservation-item[data-scale="0.5"][data-duration="short"] .item-title { font-size: 0.75rem; margin-top: 0; }
-.reservation-item[data-scale="0.5"][data-duration="short"] .status-badge { font-size: 0.55rem; padding: 0.02rem 0.2rem; margin: 0; }
-.reservation-item[data-scale="0.5"][data-duration="short"] .time-display { font-size: 0.7rem; margin-bottom: 0; }
+.reservation-item[data-scale="0.5"][data-duration="short"] {
+  --card-content-padding: 1px 0;
+  --card-title-size: 0.75rem;
+  --card-title-mt: 0;
+  --card-badge-size: 0.55rem;
+  --card-badge-padding: 0.02rem 0.2rem;
+  --card-badge-margin: 0;
+  --card-time-size: 0.7rem;
+  --card-time-mb: 0;
+}
 
 /* Цвета карточек согласно спецификации */
 .order-regular {
@@ -414,29 +369,40 @@ const handleDelete = () => {
     padding: 0.25rem;
     min-height: 35px;
     border-left-width: 3px;
+
+    --card-content-gap: 0.25rem;
+    --card-content-padding: 0.25rem;
+    --card-title-size: 0.75rem;
+    --card-badge-size: 0.6rem;
+    --card-badge-padding: 0.1rem 0.2rem;
+    --card-time-size: 0.7rem;
+    --card-extra-size: 0.65rem;
+    --card-extra-line: 1.1;
   }
-  .item-content { gap: 0.25rem; padding: 0.25rem; }
-  .item-title { font-size: 0.75rem; }
-  .status-badge { font-size: 0.6rem; padding: 0.1rem 0.2rem; }
-  .time-display { font-size: 0.7rem; }
   .hover-extra { gap: 0.2rem; margin-top: 0.1rem; }
-  .customer-info,
-  .people-text,
-  .phone-text { font-size: 0.65rem; line-height: 1.1; }
 
-  .reservation-item[data-duration="short"] .item-content { padding: 0.1rem 0; }
-  .reservation-item[data-duration="short"] .item-title { font-size: 0.7rem; }
-  .reservation-item[data-duration="short"] .status-badge { font-size: 0.55rem; padding: 0.05rem 0.15rem; }
-  .reservation-item[data-duration="short"] .time-display { font-size: 0.65rem; }
+  .reservation-item[data-duration="short"] {
+    --card-content-padding: 0.1rem 0;
+    --card-title-size: 0.7rem;
+    --card-badge-size: 0.55rem;
+    --card-badge-padding: 0.05rem 0.15rem;
+    --card-time-size: 0.65rem;
+  }
 
-  .reservation-item[data-scale="0.5"] .item-title { font-size: 0.7rem; }
-  .reservation-item[data-scale="0.5"] .status-badge { font-size: 0.55rem; padding: 0.05rem 0.15rem; }
-  .reservation-item[data-scale="0.5"] .time-display { font-size: 0.65rem; }
+  .reservation-item[data-scale="0.5"] {
+    --card-title-size: 0.7rem;
+    --card-badge-size: 0.55rem;
+    --card-badge-padding: 0.05rem 0.15rem;
+    --card-time-size: 0.65rem;
+  }
 
-  .reservation-item[data-scale="0.5"][data-duration="short"] .item-content { padding: 0.05rem 0; }
-  .reservation-item[data-scale="0.5"][data-duration="short"] .item-title { font-size: 0.65rem; }
-  .reservation-item[data-scale="0.5"][data-duration="short"] .status-badge { font-size: 0.5rem; padding: 0.02rem 0.1rem; }
-  .reservation-item[data-scale="0.5"][data-duration="short"] .time-display { font-size: 0.6rem; }
+  .reservation-item[data-scale="0.5"][data-duration="short"] {
+    --card-content-padding: 0.05rem 0;
+    --card-title-size: 0.65rem;
+    --card-badge-size: 0.5rem;
+    --card-badge-padding: 0.02rem 0.1rem;
+    --card-time-size: 0.6rem;
+  }
 
   .delete-button { width: 18px; height: 18px; font-size: 10px; right: 1px; top: 1px; }
 }
