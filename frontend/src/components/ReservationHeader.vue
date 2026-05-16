@@ -19,17 +19,13 @@
         type="button"
         class="icon-button theme-toggle"
         :title="isDarkTheme ? 'Светлая тема' : 'Тёмная тема'"
-        :style="{ '--icon-url': `url(${isDarkTheme ? sunIconUrl : moonIconUrl})` }"
         @click="emit('toggle-theme')"
       >
-        <span class="icon" aria-hidden="true" />
+        <SunIcon v-if="isDarkTheme" />
+        <MoonIcon v-else />
       </button>
-      <button
-        type="button"
-        class="icon-button exit-btn"
-        :style="{ '--icon-url': `url(${logoutIconUrl})` }"
-      >
-        <span class="icon" aria-hidden="true" />
+      <button type="button" class="icon-button exit-btn">
+        <LogoutIcon />
         <span>Выйти</span>
       </button>
     </div>
@@ -39,9 +35,9 @@
 <script setup lang="ts">
 import { Input as AInput } from 'ant-design-vue';
 import { SearchOutlined } from '@ant-design/icons-vue';
-import sunIconUrl from '../assets/theme.svg';
-import moonIconUrl from '../assets/moon.svg';
-import logoutIconUrl from '../assets/logout.svg';
+import SunIcon from '../assets/icons/SunIcon.vue';
+import MoonIcon from '../assets/icons/MoonIcon.vue';
+import LogoutIcon from '../assets/icons/LogoutIcon.vue';
 
 defineProps<{
   restaurantName?: string | null;
@@ -67,7 +63,6 @@ const emit = defineEmits<{
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-
   position: sticky;
   top: 0;
   z-index: 2100;
@@ -116,20 +111,8 @@ const emit = defineEmits<{
   padding: 0;
 }
 
-.icon {
-  display: inline-block;
-  width: 20px;
-  height: 20px;
+.icon-button svg {
   flex-shrink: 0;
-  background-color: currentColor;
-  -webkit-mask-image: var(--icon-url);
-          mask-image: var(--icon-url);
-  -webkit-mask-position: center;
-          mask-position: center;
-  -webkit-mask-repeat: no-repeat;
-          mask-repeat: no-repeat;
-  -webkit-mask-size: contain;
-          mask-size: contain;
 }
 
 @media (max-width: 460px) {
