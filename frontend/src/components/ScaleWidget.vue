@@ -68,8 +68,6 @@ const emit = defineEmits<{
   transform: translateY(0);
 }
 
-:global(.light-theme) .scale-btn:hover { background-color: #d0d0d0; }
-
 @media (max-width: 460px) {
   .fixed-scale-widget { bottom: 1rem; right: 1rem; transform: scale(0.8); }
 }

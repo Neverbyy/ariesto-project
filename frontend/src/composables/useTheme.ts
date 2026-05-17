@@ -1,7 +1,8 @@
 import { ref, type Ref } from 'vue';
 
 const STORAGE_KEY = 'isDarkTheme';
-const NO_TRANSITIONS_CLASS = 'no-transitions';
+
+let state: Ref<boolean> | null = null;
 
 function loadInitial(): boolean {
   try {
@@ -13,9 +14,8 @@ function loadInitial(): boolean {
   return true;
 }
 
-function applyThemeClass(isDark: boolean) {
+function applyClass(isDark: boolean) {
   document.documentElement.classList.toggle('light-theme', !isDark);
-  document.body.classList.toggle('light-theme', !isDark);
 }
 
 function persist(isDark: boolean) {
@@ -26,36 +26,18 @@ function persist(isDark: boolean) {
   }
 }
 
-let isDarkTheme: Ref<boolean> | null = null;
-
-function ensureInitialized(): Ref<boolean> {
-  if (isDarkTheme) return isDarkTheme;
-  const initial = loadInitial();
-  isDarkTheme = ref(initial);
-  applyThemeClass(initial);
-  return isDarkTheme;
-}
-
 export function useTheme() {
-  const state = ensureInitialized();
+  if (!state) {
+    const initial = loadInitial();
+    state = ref(initial);
+    applyClass(initial);
+  }
 
   const toggleTheme = () => {
-    const next = !state.value;
-    const root = document.documentElement;
-
-    root.classList.add(NO_TRANSITIONS_CLASS);
-    applyThemeClass(next);
+    const next = !state!.value;
+    applyClass(next);
     persist(next);
-
-    void root.offsetHeight;
-
-    requestAnimationFrame(() => {
-
-      state.value = next;
-      requestAnimationFrame(() => {
-        root.classList.remove(NO_TRANSITIONS_CLASS);
-      });
-    });
+    state!.value = next;
   };
 
   return { isDarkTheme: state, toggleTheme };

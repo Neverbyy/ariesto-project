@@ -232,22 +232,17 @@ const handleDelete = () => {
 }
 
 .status-badge {
-  background-color: rgba(74, 74, 74, .9);
-  color: #ffffff;
+  background-color: var(--badge-bg);
+  color: var(--badge-color);
   padding: var(--card-badge-padding);
   margin: var(--card-badge-margin) 0;
   border-radius: 3px;
   font-size: var(--card-badge-size);
-  font-weight: 500;
+  font-weight: var(--badge-font-weight);
+  box-shadow: var(--badge-shadow);
   white-space: nowrap;
 }
 
-:global(.light-theme) .status-badge {
-  background-color: rgba(0, 0, 0, .15);
-  color: #1a1a1a;
-  font-weight: 600;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
 
 .time-display {
   white-space: nowrap;
@@ -313,65 +308,36 @@ const handleDelete = () => {
 }
 
 .order-regular {
-  background-color: color-mix(in srgb, var(--card-order-regular) 25%, transparent);
-  border-left: 4px solid var(--card-order-regular);
+  background-color: color-mix(in srgb, var(--card-order-regular) var(--card-bg-opacity), transparent);
+  border-left: var(--card-border-width) solid var(--card-order-regular);
+  box-shadow: var(--card-shadow);
   min-height: 50px;
 }
 .order-banquet {
-  background-color: color-mix(in srgb, var(--card-order-banquet) 25%, transparent);
-  border-left: 4px solid var(--card-order-banquet);
+  background-color: color-mix(in srgb, var(--card-order-banquet) var(--card-bg-opacity), transparent);
+  border-left: var(--card-border-width) solid var(--card-order-banquet);
+  box-shadow: var(--card-shadow);
   min-height: 50px;
 }
-.order-reservation {
-  background-color: color-mix(in srgb, var(--card-reservation-regular) 25%, transparent);
-  border-left: 4px solid var(--card-reservation-regular);
+.order-reservation,
+.reservation-regular {
+  background-color: color-mix(in srgb, var(--card-reservation-regular) var(--card-bg-opacity), transparent);
+  border-left: var(--card-border-width) solid var(--card-reservation-regular);
+  box-shadow: var(--card-shadow);
 }
 .order-live-queue {
-  background-color: color-mix(in srgb, var(--card-reservation-live) 25%, transparent);
-  border-left: 4px solid var(--card-reservation-live);
-}
-.reservation-regular {
-  background-color: color-mix(in srgb, var(--card-reservation-regular) 25%, transparent);
-  border-left: 4px solid var(--card-reservation-regular);
+  background-color: color-mix(in srgb, var(--card-reservation-live) var(--card-bg-opacity), transparent);
+  border-left: var(--card-border-width) solid var(--card-reservation-live);
+  box-shadow: var(--card-shadow);
 }
 
 .reservation-item.past-item {
-  background-color: rgba(140, 140, 140, 0.18) !important;
-  border-left: 4px solid #8a8a8a !important;
+  background-color: var(--past-card-bg) !important;
+  border-left: var(--card-border-width) solid var(--past-card-border) !important;
   color: var(--text-muted);
   box-shadow: none !important;
 }
 
-:global(.light-theme) .order-regular {
-  background-color: color-mix(in srgb, var(--card-order-regular) 35%, transparent);
-  border-left: 5px solid var(--card-order-regular);
-  box-shadow: 0 2px 8px rgba(29, 78, 216, 0.15);
-}
-:global(.light-theme) .order-banquet {
-  background-color: color-mix(in srgb, var(--card-order-banquet) 35%, transparent);
-  border-left: 5px solid var(--card-order-banquet);
-  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.15);
-}
-:global(.light-theme) .order-reservation {
-  background-color: color-mix(in srgb, var(--card-reservation-regular) 35%, transparent);
-  border-left: 5px solid var(--card-reservation-regular);
-  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.15);
-}
-:global(.light-theme) .order-live-queue {
-  background-color: color-mix(in srgb, var(--card-reservation-live) 35%, transparent);
-  border-left: 5px solid var(--card-reservation-live);
-  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.15);
-}
-:global(.light-theme) .reservation-regular {
-  background-color: color-mix(in srgb, var(--card-reservation-regular) 35%, transparent);
-  border-left: 5px solid var(--card-reservation-regular);
-  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.15);
-}
-:global(.light-theme) .reservation-item.past-item {
-  background-color: rgba(150, 150, 150, 0.22) !important;
-  border-left: 5px solid #9a9a9a !important;
-  box-shadow: none !important;
-}
 
 @media (max-width: 460px) {
   .reservation-item {

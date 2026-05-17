@@ -183,20 +183,14 @@ const submit = () => {
 }
 
 .modal-content {
-  background-color: var(--bg-primary);
+  background-color: var(--modal-bg);
   border-radius: 12px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--modal-shadow);
   max-width: 500px;
   width: 90%;
   max-height: 90vh;
   overflow-y: auto;
-  border: 1px solid var(--border-color);
-}
-
-:global(.light-theme) .modal-content {
-  background-color: #ffffff;
-  border: 2px solid #e5e7eb;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  border: var(--modal-border);
 }
 
 .modal-header {
@@ -204,12 +198,8 @@ const submit = () => {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 1.5rem 1rem;
-  border-bottom: 1px solid var(--border-color);
-}
-
-:global(.light-theme) .modal-header {
-  background-color: #f8fafc;
-  border-bottom: 2px solid #e2e8f0;
+  background-color: var(--modal-header-bg);
+  border-bottom: var(--modal-divider);
 }
 
 .modal-header h3 {
@@ -232,20 +222,13 @@ const submit = () => {
 
 .modal-close:hover { background-color: var(--bg-tertiary); color: var(--text-primary); }
 
-.modal-body { padding: 1.5rem; }
-
-:global(.light-theme) .modal-body { background-color: #ffffff; }
+.modal-body { padding: 1.5rem; background-color: var(--modal-body-bg); }
 
 .order-details {
-  background-color: var(--bg-secondary);
+  background-color: var(--modal-section-bg);
   border-radius: 8px;
   padding: 1rem;
   margin-bottom: 1.5rem;
-}
-
-:global(.light-theme) .order-details {
-  background-color: #f1f5f9;
-  border: 1px solid #e2e8f0;
 }
 
 .detail-row {
@@ -271,19 +254,12 @@ const submit = () => {
 .form-select {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid var(--border-color);
+  border: var(--input-border);
   border-radius: 6px;
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
+  background-color: var(--input-bg);
+  color: var(--input-color);
   font-size: 1rem;
   transition: border-color 0.2s ease;
-}
-
-:global(.light-theme) .form-input,
-:global(.light-theme) .form-select {
-  background-color: #ffffff;
-  border: 1px solid #d1d5db;
-  color: #374151;
 }
 
 .form-input::placeholder { color: var(--text-muted); }
@@ -293,12 +269,8 @@ const submit = () => {
   gap: 1rem;
   justify-content: flex-end;
   padding: 1rem 1.5rem 1.5rem;
-  border-top: 1px solid var(--border-color);
-}
-
-:global(.light-theme) .modal-footer {
-  background-color: #f8fafc;
-  border-top: 2px solid #e2e8f0;
+  background-color: var(--modal-header-bg);
+  border-top: var(--modal-divider);
 }
 
 .btn {

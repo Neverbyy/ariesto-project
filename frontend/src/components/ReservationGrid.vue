@@ -346,15 +346,9 @@ const labelOutsideTop = computed<number | null>(() => {
 }
 
 .table-cell:hover:not(.occupied) {
-  background-color: rgba(59, 130, 246, 0.05);
-  border-color: rgba(59, 130, 246, 0.3);
-  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.2);
-}
-
-:global(.light-theme) .table-cell:hover:not(.occupied) {
-  background-color: rgba(59, 130, 246, 0.08);
-  border-color: rgba(59, 130, 246, 0.4);
-  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.3);
+  background-color: var(--cell-hover-bg);
+  border-color: var(--cell-hover-border);
+  box-shadow: inset 0 0 0 1px var(--cell-hover-shadow);
 }
 
 .table-cell.dragging {
@@ -383,18 +377,12 @@ const labelOutsideTop = computed<number | null>(() => {
 
 .table-cell.occupied {
   cursor: not-allowed;
-  background-color: rgba(239, 68, 68, 0.05);
+  background-color: var(--cell-occupied-bg);
 }
 .table-cell.occupied:hover {
-  background-color: rgba(239, 68, 68, 0.08);
-  border-color: rgba(239, 68, 68, 0.3);
-  box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.2);
-}
-
-:global(.light-theme) .table-cell.occupied:hover {
-  background-color: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.4);
-  box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.3);
+  background-color: var(--cell-occupied-hover-bg);
+  border-color: var(--cell-occupied-hover-border);
+  box-shadow: inset 0 0 0 1px var(--cell-occupied-hover-shadow);
 }
 
 @media (max-width: 460px) {
