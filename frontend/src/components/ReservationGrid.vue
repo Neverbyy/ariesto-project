@@ -10,8 +10,10 @@
 
     <div class="reservation-grid-container" ref="gridContainerEl" :style="gridStyles" :aria-busy="isLoading">
       <div class="grid-wrapper">
+
+        <div class="corner-cell"></div>
+
         <div class="table-headers">
-          <div class="time-header-cell"></div>
           <div
             v-for="table in tables"
             :key="table.id"
@@ -23,11 +25,11 @@
           </div>
         </div>
 
-        <div class="grid-content" ref="gridContentEl">
-          <div class="time-column">
-            <div v-for="ts in timeSlots" :key="ts" class="time-cell">{{ ts }}</div>
-          </div>
+        <div class="time-column">
+          <div v-for="ts in timeSlots" :key="ts" class="time-cell">{{ ts }}</div>
+        </div>
 
+        <div class="grid-content" ref="gridContentEl">
           <div class="tables-columns">
             <div
               v-for="table in tables"
@@ -218,9 +220,29 @@ const labelOutsideTop = computed<number | null>(() => {
 .reservation-grid-container::-webkit-scrollbar-thumb:hover { background: #707070; }
 .reservation-grid-container::-webkit-scrollbar-corner { background: #2a2a2a; }
 
-.grid-wrapper { display: flex; flex-direction: column; width: 100%; }
+.grid-wrapper {
+  display: grid;
+  grid-template-columns: var(--time-col-width, 80px) minmax(max-content, 1fr);
+  grid-template-rows: auto 1fr;
+  width: max-content;
+  min-width: 100%;
+}
+
+.corner-cell {
+  grid-row: 1;
+  grid-column: 1;
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 850;
+  background-color: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
 
 .table-headers {
+  grid-row: 1;
+  grid-column: 2;
   display: flex;
   background-color: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
@@ -228,17 +250,6 @@ const labelOutsideTop = computed<number | null>(() => {
   top: 0;
   z-index: 700;
   min-width: max-content;
-}
-
-.time-header-cell {
-  width: 80px;
-  min-width: 80px;
-  padding: 1rem 0.5rem;
-  border-right: 1px solid #404040;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 500;
 }
 
 .table-header-cell {
@@ -258,7 +269,13 @@ const labelOutsideTop = computed<number | null>(() => {
 .table-capacity { font-size: 0.9rem; color: #a0a0a0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .table-zone { font-size: 0.8rem; color: #808080; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.grid-content { display: flex; position: relative; z-index: 1; }
+.grid-content {
+  grid-row: 2;
+  grid-column: 2;
+  display: flex;
+  position: relative;
+  z-index: 1;
+}
 
 .current-time-line {
   position: absolute;
@@ -296,12 +313,15 @@ const labelOutsideTop = computed<number | null>(() => {
 }
 
 .time-column {
-  width: 80px;
-  min-width: 80px;
+  grid-row: 2;
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
   background-color: var(--bg-secondary);
   position: sticky;
   left: 0;
   z-index: 700;
+  border-right: 1px solid var(--border-color);
 }
 
 .time-cell {
@@ -387,13 +407,12 @@ const labelOutsideTop = computed<number | null>(() => {
 
 @media (max-width: 460px) {
   .reservation-grid-container { margin: 1rem 0; max-height: 60vh; }
+  .grid-wrapper { --time-col-width: 60px; }
   .table-header-cell { min-width: 80px; padding: 0.25rem; }
   .table-number { font-size: 12px; }
   .table-capacity { font-size: 10px; }
   .table-zone { font-size: 10px; }
-  .time-column { min-width: 60px; }
   .time-cell { font-size: 12px; padding: 0.25rem; height: 40px; }
-  .grid-content { min-width: 600px; }
   .table-cell { min-width: 80px; height: 40px; }
   .table-cell.dragging,
   .table-cell.dragging-horizontal { border-width: 1px; }
