@@ -15,5 +15,7 @@
 
 - Vue 3 (Composition API)
 - TypeScript
+- Pinia - Client State Management
+- Tanstack Query - Server-side State Management
 - Vite
 - CSS3 (Grid Layout, Flexbox)
