@@ -2,7 +2,6 @@
   <Tooltip
     placement="top"
     :mouse-enter-delay="0.4"
-    :open="lines.length === 0 ? false : undefined"
     overlay-class-name="reservation-tooltip"
   >
     <template #title>

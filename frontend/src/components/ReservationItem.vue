@@ -1,7 +1,6 @@
 <template>
   <ReservationItemTooltip :lines="tooltipLines">
     <div
-      ref="cardEl"
       :class="['reservation-item', itemClass, {
         hovered: isHovered,
         selected: isSelected,
@@ -53,7 +52,6 @@ import { computed, ref, toRef } from 'vue';
 import { App as AntApp } from 'ant-design-vue';
 import type { TableItem } from '../types/reservation';
 import { getOrderStatusLabel, getReservationStatusLabel, getItemClass } from '../utils/status';
-import { useCardOverflow } from '../composables/useCardOverflow';
 import { useCardGeometry } from '../composables/useCardGeometry';
 import { useCardFields } from '../composables/useCardFields';
 import type { GridItem } from '../utils/tableItems';
@@ -85,8 +83,6 @@ const statusLabel = computed(() =>
     : getReservationStatusLabel(props.item.status),
 );
 
-const { hasOverflow } = useCardOverflow();
-
 const { durationClass, isPast, itemStyle, timeText } = useCardGeometry({
   item: toRef(props, 'item'),
   timeSlot: toRef(props, 'timeSlot'),
@@ -105,7 +101,6 @@ const { fields, display, customerLine, tooltipLines } = useCardFields({
   statusLabel,
   timeText,
   itemHeightPx,
-  hasOverflow,
 });
 
 const deleteButtonTitle = computed(() =>

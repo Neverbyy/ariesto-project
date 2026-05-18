@@ -34,7 +34,6 @@ interface UseCardFieldsParams {
   statusLabel: Ref<string>;
   timeText: Ref<string>;
   itemHeightPx: Ref<number>;
-  hasOverflow: Ref<boolean>;
 }
 
 interface UseCardFieldsReturn {
@@ -45,7 +44,7 @@ interface UseCardFieldsReturn {
 }
 
 export function useCardFields(params: UseCardFieldsParams): UseCardFieldsReturn {
-  const { item, isOrder, statusLabel, timeText, itemHeightPx, hasOverflow } = params;
+  const { item, isOrder, statusLabel, timeText, itemHeightPx } = params;
 
   const display = computed<CardDisplay>(() => {
     const h = itemHeightPx.value;
@@ -91,16 +90,8 @@ export function useCardFields(params: UseCardFieldsParams): UseCardFieldsReturn 
   });
 
   const tooltipLines = computed<string[]>(() => {
-    const d = display.value;
     const f = fields.value;
     const customer = f.type === 'order' ? f.customer : '';
-
-    const hiddenByThresholds = !d.showExtra
-      || (!!customer && !d.showCustomer)
-      || (!!f.phone && !d.showPhone)
-      || (!!f.people && !d.showPeople);
-
-    if (!hiddenByThresholds && !hasOverflow.value) return [];
 
     const lines = [`${f.title} · ${f.badge}`, f.time];
     if (customer) lines.push(customer);
